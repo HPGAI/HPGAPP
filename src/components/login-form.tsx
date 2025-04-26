@@ -2,17 +2,74 @@
 
 import { Button } from '@/components/ui/button'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useEffect } from 'react'
 
 export default function LoginForm() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClientComponentClient()
+  
+  // Always consider we're coming from logout to force a fresh login
+  const forceNewLogin = true
+  
+  useEffect(() => {
+    if (forceNewLogin) {
+      // Clear Google's auth state first by loading Google's logout page in a hidden iframe
+      const iframe = document.createElement('iframe')
+      iframe.style.display = 'none'
+      iframe.src = 'https://accounts.google.com/logout'
+      document.body.appendChild(iframe)
+      
+      const cleanupIframe = () => {
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe)
+        }
+      }
+      
+      // Remove iframe after load or timeout
+      iframe.onload = cleanupIframe
+      setTimeout(cleanupIframe, 1000)
+    }
+  }, [])
 
   const handleSocialLogin = async (provider: 'google') => {
-    await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo: `${window.location.origin}/auth/oauth`,
-      },
-    })
+    try {
+      // Generate a unique ID to ensure no caching
+      const uniqueId = Date.now().toString() + Math.random().toString(36).substring(2)
+      
+      // Always try to sign out first to clear any existing sessions
+      await supabase.auth.signOut()
+      
+      // Start a new OAuth flow with parameters that force a fresh login
+      await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/oauth?ts=${uniqueId}`,
+          queryParams: {
+            // Force user to select their account
+            prompt: 'select_account',
+            // Force re-authentication
+            access_type: 'offline',
+            // Always require consent
+            approval_prompt: 'force',
+            // Use a unique state to prevent any caching
+            state: uniqueId,
+            // Don't use any login hints to prevent auto-selection
+            login_hint: '',
+            // Disable including granted scopes to force fresh consent
+            include_granted_scopes: 'false',
+            // Add a nonce for added security
+            nonce: Math.random().toString(36).substring(2)
+          }
+        },
+      })
+    } catch (error) {
+      console.error('Error starting OAuth flow:', error)
+      
+      // If there's an error, try refreshing the page
+      window.location.href = `/auth/login?error=true&ts=${Date.now()}`
+    }
   }
 
   return (

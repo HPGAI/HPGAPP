@@ -10,19 +10,42 @@ export const config = {
 
 export async function middleware(request: NextRequest) {
   try {
-    const res = NextResponse.next()
+    // Create a response object that we can modify
+    const res = NextResponse.next({
+      request: {
+        headers: request.headers,
+      },
+    })
+    
+    // Add cache control headers to prevent caching of auth state
+    res.headers.set('Cache-Control', 'no-store, max-age=0, must-revalidate')
+    res.headers.set('Pragma', 'no-cache')
+    res.headers.set('Expires', '0')
+    
     const supabase = createMiddlewareClient({ req: request, res })
 
     // Refresh the session
-    await supabase.auth.getSession()
+    const { data: { session } } = await supabase.auth.getSession()
+    
+    const url = new URL(request.url)
+    
+    // Special handling for login page
+    if (url.pathname === '/auth/login') {
+      // Check for force logout parameters
+      const hasLogoutParam = url.searchParams.has('logged_out') || url.searchParams.has('force')
+      
+      // If user is logged in and trying to access login page without logout params,
+      // redirect to protected page
+      if (session && !hasLogoutParam) {
+        return NextResponse.redirect(new URL('/protected', request.url))
+      }
+      
+      // Otherwise, allow access to login page
+      return res
+    }
 
     // If the request is for a protected route, verify authentication
-    const url = new URL(request.url)
     if (url.pathname.startsWith('/protected')) {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-
       // If no session, redirect to login
       if (!session) {
         return NextResponse.redirect(new URL('/auth/login', request.url))

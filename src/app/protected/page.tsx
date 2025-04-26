@@ -6,7 +6,11 @@ import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 
 export default async function ProtectedPage() {
-  const supabase = createServerComponentClient({ cookies })
+  const cookieStore = cookies()
+  const supabase = createServerComponentClient({ 
+    cookies: () => cookieStore 
+  })
+  
   const { data: { session } } = await supabase.auth.getSession()
 
   if (!session) {
