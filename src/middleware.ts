@@ -50,17 +50,32 @@ export async function middleware(request: NextRequest) {
       const hasLogoutParam = url.searchParams.has('logged_out') || url.searchParams.has('force')
       
       // If user is logged in and trying to access login page without logout params,
-      // redirect to protected page
+      // redirect to homepage
       if (session && !hasLogoutParam) {
-        return NextResponse.redirect(new URL('/protected', request.url))
+        return NextResponse.redirect(new URL('/homepage', request.url))
       }
       
       // Otherwise, allow access to login page
       return response
     }
 
-    // If the request is for a protected route, verify authentication
+    // Handle legacy routes for compatibility
     if (url.pathname.startsWith('/protected')) {
+      if (url.pathname === '/protected/profile') {
+        return NextResponse.redirect(new URL('/profile', request.url))
+      }
+      // For other protected paths, redirect to the equivalent homepage path
+      const newPath = url.pathname.replace('/protected', '/homepage')
+      return NextResponse.redirect(new URL(newPath, request.url))
+    }
+
+    // Handle legacy nested profile route
+    if (url.pathname === '/homepage/profile') {
+      return NextResponse.redirect(new URL('/profile', request.url))
+    }
+
+    // If the request is for a protected route, verify authentication
+    if (url.pathname.startsWith('/homepage') || url.pathname.startsWith('/profile')) {
       // If no session, redirect to login
       if (!session) {
         return NextResponse.redirect(new URL('/auth/login', request.url))

@@ -64,8 +64,8 @@ export async function GET(request: Request) {
         return noSessionResponse
       }
       
-      // Successful authentication - redirect to protected area
-      const successResponse = NextResponse.redirect(`${requestUrl.origin}/protected?login_success=true&ts=${Date.now()}`)
+      // Successful authentication - redirect to homepage
+      const successResponse = NextResponse.redirect(`${requestUrl.origin}/homepage?login_success=true&ts=${Date.now()}`)
       // Add cache control headers to prevent caching of auth state
       successResponse.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
       successResponse.headers.set('Pragma', 'no-cache')

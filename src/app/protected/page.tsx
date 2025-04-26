@@ -24,17 +24,28 @@ export default async function ProtectedPage() {
   return (
     <div className="max-w-4xl mx-auto p-6 md:p-10">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Protected Page</h1>
-        <LogoutButton />
+        <h1 className="text-3xl font-bold">Homepage</h1>
+        <div className="flex gap-2 items-center">
+          <Button variant="outline" asChild>
+            <Link href="/protected/profile">View Profile</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/">Home</Link>
+          </Button>
+          <LogoutButton />
+        </div>
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden p-6">
         <h2 className="text-xl font-semibold mb-4">Welcome, {user?.email}</h2>
         <p className="mb-4">
-          This page is protected and can only be accessed by authenticated users.
+          This is your homepage where you can access all features of the app.
         </p>
-        <div className="mt-6">
+        <div className="mt-6 flex gap-4">
           <Button asChild>
+            <Link href="/protected/profile">View Your Profile</Link>
+          </Button>
+          <Button variant="outline" asChild>
             <Link href="/">Go to Home</Link>
           </Button>
         </div>
