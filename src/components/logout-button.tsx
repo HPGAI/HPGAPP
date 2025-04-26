@@ -1,12 +1,17 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
 export default function LogoutButton() {
   const router = useRouter()
-  const supabase = createClientComponentClient()
+  const supabase = createClient()
+
+  // Function to log out directly from Google accounts
+  const handleGoogleLogout = () => {
+    window.open('https://accounts.google.com/Logout', '_blank')
+  }
 
   const handleLogout = async () => {
     try {
@@ -48,8 +53,18 @@ export default function LogoutButton() {
   }
 
   return (
-    <Button onClick={handleLogout} variant="outline">
-      Sign out
-    </Button>
+    <div className="flex flex-col gap-2">
+      <Button onClick={handleLogout} variant="outline">
+        Sign out
+      </Button>
+      <Button 
+        onClick={handleGoogleLogout} 
+        variant="ghost" 
+        size="sm" 
+        className="text-xs"
+      >
+        Sign out of Google
+      </Button>
+    </div>
   )
 } 

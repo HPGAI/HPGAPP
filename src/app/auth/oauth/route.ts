@@ -1,6 +1,10 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
+
+// Fallback values for development
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://rpuscxehaowkqplamsse.supabase.co'
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwdXNjeGVoYW93a3FwbGFtc3NlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2MDE5NzcsImV4cCI6MjA2MTE3Nzk3N30.ow0GergTQQpqUu2k6ajnF7rqJf9YRuHv7pmduM1fd8sI'
 
 // Force dynamic rendering for this route to prevent caching
 export const dynamic = 'force-dynamic'
@@ -13,7 +17,25 @@ export async function GET(request: Request) {
   if (code) {
     try {
       const cookieStore = cookies()
-      const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+      
+      // Create the Supabase client with the Next.js 15 compatible pattern
+      const supabase = createServerClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY,
+        {
+          cookies: {
+            get(name) {
+              return cookieStore.get(name)?.value
+            },
+            set(name, value, options) {
+              cookieStore.set({ name, value, ...options })
+            },
+            remove(name, options) {
+              cookieStore.set({ name, value: '', ...options })
+            }
+          }
+        }
+      )
       
       // Exchange the code for a session - this is a critical part of the PKCE flow
       // DO NOT sign out before this as it will invalidate the code verifier in localStorage

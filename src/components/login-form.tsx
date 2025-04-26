@@ -1,14 +1,14 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect } from 'react'
 
 export default function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const supabase = createClientComponentClient()
+  const supabase = createClient()
   
   // Always consider we're coming from logout to force a fresh login
   const forceNewLogin = true
@@ -47,8 +47,8 @@ export default function LoginForm() {
         options: {
           redirectTo: `${window.location.origin}/auth/oauth?ts=${uniqueId}`,
           queryParams: {
-            // Force user to select their account
-            prompt: 'select_account',
+            // Force user to select their account AND show "Use another account" option
+            prompt: 'select_account consent',
             // Force re-authentication
             access_type: 'offline',
             // Always require consent
@@ -57,6 +57,8 @@ export default function LoginForm() {
             state: uniqueId,
             // Don't use any login hints to prevent auto-selection
             login_hint: '',
+            // Add parameter to force showing "Add another account" option
+            switch_account: 'true',
             // Disable including granted scopes to force fresh consent
             include_granted_scopes: 'false',
             // Add a nonce for added security
@@ -91,6 +93,16 @@ export default function LoginForm() {
         </svg>
         Sign in with Google
       </Button>
+      
+      <div className="mt-4 text-center text-sm text-gray-500">
+        <Button
+          variant="link"
+          onClick={() => window.open('https://accounts.google.com/signup', '_blank')}
+          className="text-sm underline"
+        >
+          Create a new Google account
+        </Button>
+      </div>
     </div>
   )
 } 

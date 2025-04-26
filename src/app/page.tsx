@@ -1,15 +1,20 @@
 import Image from "next/image";
 import Link from "next/link";
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { getServerClient } from '../lib/supabase';
+
+// Environment variables 
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://rpuscxehaowkqplamsse.supabase.co'
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwdXNjeGVoYW93a3FwbGFtc3NlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2MDE5NzcsImV4cCI6MjA2MTE3Nzk3N30.ow0GergTQQpqUu2k6ajnF7rqJf9YRuHv7pmduM1fd8sI'
+
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export default async function Home() {
-  // Properly await cookies before creating the supabase client
-  const cookieStore = cookies();
-  const supabase = createServerComponentClient({ 
-    cookies: () => cookieStore 
-  });
+  // Create the Supabase client using our helper
+  const supabase = await getServerClient();
   
+  // Get session using the supabase client
   const { data: { session } } = await supabase.auth.getSession();
   
   return (
@@ -21,6 +26,7 @@ export default async function Home() {
           alt="Next.js logo"
           width={180}
           height={38}
+          style={{ height: 'auto' }}
           priority
         />
         
@@ -68,6 +74,7 @@ export default async function Home() {
               alt="Vercel logomark"
               width={20}
               height={20}
+              style={{ height: 'auto' }}
             />
             Deploy now
           </a>

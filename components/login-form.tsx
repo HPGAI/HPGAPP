@@ -1,10 +1,10 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase/client'
 
 export default function LoginForm() {
-  const supabase = createClientComponentClient()
+  const supabase = createClient()
 
   const handleSocialLogin = async (provider: 'google') => {
     await supabase.auth.signInWithOAuth({

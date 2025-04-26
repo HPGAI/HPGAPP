@@ -1,5 +1,6 @@
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
+import { updateSession } from '@/lib/supabase/middleware'
 import { NextRequest, NextResponse } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
 
 // This middleware applies to all routes
 export const config = {
@@ -10,22 +11,36 @@ export const config = {
 
 export async function middleware(request: NextRequest) {
   try {
-    // Create a response object that we can modify
-    const res = NextResponse.next({
-      request: {
-        headers: request.headers,
-      },
-    })
+    // Call updateSession to refresh auth tokens and get a response
+    const response = await updateSession(request)
     
     // Add cache control headers to prevent caching of auth state
-    res.headers.set('Cache-Control', 'no-store, max-age=0, must-revalidate')
-    res.headers.set('Pragma', 'no-cache')
-    res.headers.set('Expires', '0')
+    response.headers.set('Cache-Control', 'no-store, max-age=0, must-revalidate')
+    response.headers.set('Pragma', 'no-cache')
+    response.headers.set('Expires', '0')
     
-    const supabase = createMiddlewareClient({ req: request, res })
+    // Create Supabase client for auth checks
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name) {
+            return request.cookies.get(name)?.value
+          },
+          set(name, value, options) {
+            // Cookies already set by updateSession
+          },
+          remove(name, options) {
+            // Cookies already handled by updateSession
+          },
+        },
+      }
+    )
 
-    // Refresh the session
-    const { data: { session } } = await supabase.auth.getSession()
+    // Get user session for route protection
+    const { data } = await supabase.auth.getSession()
+    const session = data.session
     
     const url = new URL(request.url)
     
@@ -41,7 +56,7 @@ export async function middleware(request: NextRequest) {
       }
       
       // Otherwise, allow access to login page
-      return res
+      return response
     }
 
     // If the request is for a protected route, verify authentication
@@ -52,7 +67,7 @@ export async function middleware(request: NextRequest) {
       }
     }
 
-    return res
+    return response
   } catch (error) {
     console.error('Error in middleware:', error)
     // Continue without auth in development

@@ -1,23 +1,25 @@
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import LogoutButton from '@/components/logout-button'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
+import { getServerClient } from '../../lib/supabase'
+
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export default async function ProtectedPage() {
-  const cookieStore = cookies()
-  const supabase = createServerComponentClient({ 
-    cookies: () => cookieStore 
-  })
+  // Get session using the helper function
+  const supabase = await getServerClient();
+  const { data: { session } } = await supabase.auth.getSession();
   
-  const { data: { session } } = await supabase.auth.getSession()
-
+  // Redirect if not authenticated
   if (!session) {
     redirect('/auth/login')
   }
-
-  const { data: { user } } = await supabase.auth.getUser()
+  
+  // Get user details
+  const { data: { user } } = await supabase.auth.getUser();
 
   return (
     <div className="max-w-4xl mx-auto p-6 md:p-10">
