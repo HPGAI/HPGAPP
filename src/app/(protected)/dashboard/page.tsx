@@ -1,5 +1,4 @@
 import { redirect } from 'next/navigation'
-import LogoutButton from '@/components/logout-button'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { getServerClient } from '../../../lib/supabase'
@@ -24,23 +23,8 @@ export default async function DashboardPage() {
 
   return (
     <div className="max-w-4xl mx-auto p-6 md:p-10">
-      <div className="flex justify-between items-center mb-8">
+      <div className="mb-8">
         <h1 className="text-3xl font-bold">Dashboard</h1>
-        <div className="flex gap-2 items-center">
-          <Button variant="outline" asChild>
-            <Link href="/profile">
-              <User className="mr-2 h-4 w-4" />
-              Profile
-            </Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href="/rfps">
-              <FileText className="mr-2 h-4 w-4" />
-              RFPs
-            </Link>
-          </Button>
-          <LogoutButton />
-        </div>
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden p-6">

@@ -44,13 +44,13 @@ export default function AppHeader({ user }: AppHeaderProps) {
                 
                 <Link 
                   href="/rfps" 
-                  className={`px-4 py-2 rounded-md flex items-center font-medium shadow-sm ${
+                  className={`flex items-center ${
                     pathname === '/rfps' || pathname.startsWith('/rfps/') 
-                      ? 'bg-orange-600 text-white' 
-                      : 'bg-orange-500 text-white hover:bg-orange-600'
+                      ? 'text-blue-600 font-medium' 
+                      : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  <FileText className="mr-2 h-5 w-5" />
+                  <FileText className="mr-1 h-4 w-4" />
                   RFPs Management
                 </Link>
                 
