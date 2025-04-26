@@ -8,7 +8,7 @@ import {
   useReactTable,
   PaginationState,
 } from "@tanstack/react-table";
-import { Button } from "@/components/ui/button";
+import { Button } from "../../../components/ui/button";
 import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface DataTableProps<TData, TValue> {

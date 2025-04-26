@@ -7,9 +7,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
+} from "../../../components/ui/table";
+import { Badge } from "../../../components/ui/badge";
+import { Card } from "../../../components/ui/card";
 
 type RfpData = {
   id: number;

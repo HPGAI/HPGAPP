@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "../../../../components/ui/button";
 import { Loader2, RefreshCcw } from "lucide-react";
 import { createClient } from "../../../lib/supabase";
 
