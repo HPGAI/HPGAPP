@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { CookieOptions } from '@supabase/ssr'
 
 export function createClient(request: NextRequest) {
   // Create an unmodified response
@@ -17,7 +18,7 @@ export function createClient(request: NextRequest) {
         get(name: string) {
           return request.cookies.get(name)?.value
         },
-        set(name: string, value: string, options: any) {
+        set(name: string, value: string, options: CookieOptions) {
           // If the cookie is updated, update the cookies for the request and response
           request.cookies.set({
             name,
@@ -35,7 +36,7 @@ export function createClient(request: NextRequest) {
             ...options,
           })
         },
-        remove(name: string, options: any) {
+        remove(name: string, options: CookieOptions) {
           // If the cookie is removed, update the cookies for the request and response
           request.cookies.delete({
             name,
@@ -74,7 +75,7 @@ export async function updateSession(request: NextRequest) {
         get(name: string) {
           return request.cookies.get(name)?.value
         },
-        set(name: string, value: string, options: any) {
+        set(name: string, value: string, options: CookieOptions) {
           request.cookies.set({
             name,
             value,
@@ -91,7 +92,7 @@ export async function updateSession(request: NextRequest) {
             ...options,
           })
         },
-        remove(name: string, options: any) {
+        remove(name: string, options: CookieOptions) {
           request.cookies.delete({
             name,
             ...options,

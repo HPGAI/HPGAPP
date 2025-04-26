@@ -28,10 +28,10 @@ export async function middleware(request: NextRequest) {
           get(name) {
             return request.cookies.get(name)?.value
           },
-          set(name, value, options) {
+          set() {
             // Cookies already set by updateSession
           },
-          remove(name, options) {
+          remove() {
             // Cookies already handled by updateSession
           },
         },

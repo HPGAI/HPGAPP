@@ -1,0 +1,14 @@
+{
+  "git": {
+    "deploymentEnabled": {
+      "master": true
+    }
+  },
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "buildCommand": "npm run build"
+} 

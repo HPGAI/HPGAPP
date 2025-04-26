@@ -2,12 +2,9 @@
 
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect } from 'react'
 
 export default function LoginForm() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
   const supabase = createClient()
   
   // Always consider we're coming from logout to force a fresh login
@@ -31,7 +28,7 @@ export default function LoginForm() {
       iframe.onload = cleanupIframe
       setTimeout(cleanupIframe, 1000)
     }
-  }, [])
+  }, [forceNewLogin])
 
   const handleSocialLogin = async (provider: 'google') => {
     try {
