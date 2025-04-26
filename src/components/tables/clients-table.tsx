@@ -11,44 +11,56 @@ import {
   calculatePaginationRange, 
   calculatePageCount, 
   formatDate, 
-  formatCurrency, 
-  getStatusBadgeClass,
-  defaultStatusClasses 
+  getStatusBadgeClass 
 } from "./utils";
 import { ModalForm } from "../../components/ui/modal-form";
-import { RfpForm } from "../../components/forms/rfp-form";
 
-// Define the RFP type
-export type Rfp = {
+// Define the Client type
+export type Client = {
   id: number;
-  branch: string | null;
-  proposal_no: string | null;
-  file_no: string | null;
   name: string | null;
+  contact_person: string | null;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
   status: string | null;
-  request_date: string | null;
-  deadline: string | null;
-  quoted_amount: number | null;
-  currency: string | null;
+  created_at: string | null;
 };
 
-// Define the columns for the RFPs table
-export const rfpColumns: ColumnDef<Rfp>[] = [
+const clientStatusClasses = {
+  "active": "px-2 py-1 text-xs bg-green-100 text-green-800",
+  "inactive": "px-2 py-1 text-xs bg-gray-100 text-gray-800",
+  "prospect": "px-2 py-1 text-xs bg-blue-100 text-blue-800",
+  "default": "px-2 py-1 text-xs bg-gray-100 text-gray-800"
+};
+
+// Define the columns for the Clients table
+export const clientColumns: ColumnDef<Client>[] = [
   {
     accessorKey: "id",
     header: "ID",
   },
   {
-    accessorKey: "proposal_no",
-    header: "Proposal #",
-    cell: ({ row }) => <span>{row.getValue("proposal_no") || "-"}</span>,
-  },
-  {
     accessorKey: "name",
-    header: "Name",
+    header: "Client Name",
     cell: ({ row }) => (
       <span className="font-medium">{row.getValue("name") || "-"}</span>
     ),
+  },
+  {
+    accessorKey: "contact_person",
+    header: "Contact Person",
+    cell: ({ row }) => <span>{row.getValue("contact_person") || "-"}</span>,
+  },
+  {
+    accessorKey: "email",
+    header: "Email",
+    cell: ({ row }) => <span>{row.getValue("email") || "-"}</span>,
+  },
+  {
+    accessorKey: "phone",
+    header: "Phone",
+    cell: ({ row }) => <span>{row.getValue("phone") || "-"}</span>,
   },
   {
     accessorKey: "status",
@@ -57,7 +69,7 @@ export const rfpColumns: ColumnDef<Rfp>[] = [
       const status = row.getValue("status") as string | null;
       return (
         <span
-          className={`inline-flex items-center rounded-full ${getStatusBadgeClass(status, defaultStatusClasses)}`}
+          className={`inline-flex items-center rounded-full ${getStatusBadgeClass(status, clientStatusClasses)}`}
         >
           {status || "Unknown"}
         </span>
@@ -65,32 +77,11 @@ export const rfpColumns: ColumnDef<Rfp>[] = [
     },
   },
   {
-    accessorKey: "request_date",
-    header: "Request Date",
+    accessorKey: "created_at",
+    header: "Created At",
     cell: ({ row }) => {
-      const date = row.getValue("request_date") as string | null;
+      const date = row.getValue("created_at") as string | null;
       return <span>{formatDate(date)}</span>;
-    },
-  },
-  {
-    accessorKey: "deadline",
-    header: "Deadline",
-    cell: ({ row }) => {
-      const date = row.getValue("deadline") as string | null;
-      return <span>{formatDate(date)}</span>;
-    },
-  },
-  {
-    accessorKey: "quoted_amount",
-    header: "Amount",
-    cell: ({ row }) => {
-      const amount = row.getValue("quoted_amount") as number | null;
-      const currency = row.original.currency || "USD";
-      return (
-        <span className="text-right">
-          {formatCurrency(amount, currency)}
-        </span>
-      );
     },
   },
   {
@@ -99,7 +90,7 @@ export const rfpColumns: ColumnDef<Rfp>[] = [
       return (
         <div className="flex justify-end">
           <Button asChild size="sm" variant="outline" className="h-6 px-2 text-xs">
-            <Link href={`/rfps/${row.original.id}`}>View</Link>
+            <Link href={`/clients/${row.original.id}`}>View</Link>
           </Button>
         </div>
       );
@@ -107,14 +98,13 @@ export const rfpColumns: ColumnDef<Rfp>[] = [
   },
 ];
 
-interface RfpsTableProps {
-  initialData?: Rfp[];
-  // Allow overriding total entries count for testing or demo purposes
+interface ClientsTableProps {
+  initialData?: Client[];
   fixedTotalEntries?: number;
 }
 
-export function RfpsTable({ initialData = [], fixedTotalEntries }: RfpsTableProps) {
-  const [data, setData] = useState<Rfp[]>([]);
+export function ClientsTable({ initialData = [], fixedTotalEntries }: ClientsTableProps) {
+  const [data, setData] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
@@ -123,8 +113,6 @@ export function RfpsTable({ initialData = [], fixedTotalEntries }: RfpsTableProp
   const [pageCount, setPageCount] = useState(0);
   const [totalEntries, setTotalEntries] = useState<number | undefined>(fixedTotalEntries);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingRfp, setEditingRfp] = useState<Rfp | null>(null);
-  const [isEditMode, setIsEditMode] = useState(false);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -136,7 +124,7 @@ export function RfpsTable({ initialData = [], fixedTotalEntries }: RfpsTableProp
       
       // First get the count of all records
       const { count, error: countError } = await supabase
-        .from('rfps')
+        .from('clients')
         .select('*', { count: 'exact', head: true });
       
       if (countError) {
@@ -153,8 +141,8 @@ export function RfpsTable({ initialData = [], fixedTotalEntries }: RfpsTableProp
       }
       
       // Then fetch the data for the current page
-      const { data: rfps, error } = await supabase
-        .from('rfps')
+      const { data: clients, error } = await supabase
+        .from('clients')
         .select('*')
         .order('id', { ascending: false })
         .range(from, to);
@@ -163,9 +151,9 @@ export function RfpsTable({ initialData = [], fixedTotalEntries }: RfpsTableProp
         throw error;
       }
       
-      setData(rfps || []);
+      setData(clients || []);
     } catch (err) {
-      console.error("Error fetching RFPs:", err);
+      console.error("Error fetching Clients:", err);
       
       // If there's an error, use initial data if available
       if (initialData.length > 0) {
@@ -184,23 +172,13 @@ export function RfpsTable({ initialData = [], fixedTotalEntries }: RfpsTableProp
     fetchData();
   }, [pagination.pageIndex, pagination.pageSize]);
 
-  const handleAddRfpSuccess = () => {
+  const handleAddSuccess = () => {
     setIsModalOpen(false);
-    setEditingRfp(null);
-    setIsEditMode(false);
-    fetchData(); // Refresh the data to show the new RFP
+    fetchData(); // Refresh the data to show the new client
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setEditingRfp(null);
-    setIsEditMode(false);
-  };
-
-  const handleRowDoubleClick = (rfp: Rfp) => {
-    setEditingRfp(rfp);
-    setIsEditMode(true);
-    setIsModalOpen(true);
   };
 
   return (
@@ -208,42 +186,40 @@ export function RfpsTable({ initialData = [], fixedTotalEntries }: RfpsTableProp
       <div className="flex justify-end mb-1">
         <Button 
           className="gap-1 h-7 px-2 text-xs"
-          onClick={() => {
-            setEditingRfp(null);
-            setIsEditMode(false);
-            setIsModalOpen(true);
-          }}
+          onClick={() => setIsModalOpen(true)}
         >
           <PlusCircle className="h-3 w-3 mr-1" />
-          Add RFP
+          Add Client
         </Button>
       </div>
       
       <DataTable
-        columns={rfpColumns}
+        columns={clientColumns}
         data={data}
         pageCount={pageCount}
         onPaginationChange={setPagination}
         isLoading={isLoading}
         pageIndex={pagination.pageIndex}
         pageSize={pagination.pageSize}
-        totalEntries={totalEntries || 16} // Use 16 as fallback if we have no data yet
-        onRowDoubleClick={handleRowDoubleClick}
+        totalEntries={totalEntries}
       />
 
-      {/* Add/Edit RFP Modal */}
+      {/* Add Client Modal */}
       <ModalForm
-        title={isEditMode ? "Edit RFP" : "Add New RFP"}
+        title="Add New Client"
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         size="lg"
       >
-        <RfpForm 
-          onSuccess={handleAddRfpSuccess}
-          onCancel={handleCloseModal}
-          defaultValues={editingRfp || undefined}
-          isEditMode={isEditMode}
-        />
+        <div className="p-2">
+          <p className="mb-4 text-muted-foreground">
+            Client form placeholder - implement a form similar to the RfpForm component for clients.
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={handleCloseModal}>Cancel</Button>
+            <Button onClick={handleCloseModal}>Create Client</Button>
+          </div>
+        </div>
       </ModalForm>
     </div>
   );

@@ -11,46 +11,57 @@ import {
   calculatePaginationRange, 
   calculatePageCount, 
   formatDate,
-  getStatusBadgeClass,
-  formatCurrency
+  getStatusBadgeClass
 } from "./utils";
 
-export type Project = {
+export type Task = {
   id: number;
-  name: string | null;
+  title: string | null;
   description: string | null;
   status: string | null;
-  start_date: string | null;
-  end_date: string | null;
-  budget: number | null;
-  currency: string | null;
-  client_id: string | null;
-  client_name: string | null;
+  priority: string | null;
+  due_date: string | null;
+  project_id: number | null;
+  project_name: string | null;
+  assignee_id: string | null;
+  assignee_name: string | null;
 };
 
-const projectStatusClasses = {
+const taskStatusClasses = {
   "not started": "px-2 py-1 text-xs bg-gray-100 text-gray-800",
   "in progress": "px-2 py-1 text-xs bg-blue-100 text-blue-800",
   "completed": "px-2 py-1 text-xs bg-green-100 text-green-800",
-  "on hold": "px-2 py-1 text-xs bg-yellow-100 text-yellow-800",
-  "cancelled": "px-2 py-1 text-xs bg-red-100 text-red-800",
+  "blocked": "px-2 py-1 text-xs bg-red-100 text-red-800",
   "default": "px-2 py-1 text-xs bg-gray-100 text-gray-800"
 };
 
-export const projectColumns: ColumnDef<Project>[] = [
+const priorityClasses = {
+  "low": "px-2 py-1 text-xs bg-gray-100 text-gray-800",
+  "medium": "px-2 py-1 text-xs bg-yellow-100 text-yellow-800",
+  "high": "px-2 py-1 text-xs bg-orange-100 text-orange-800",
+  "urgent": "px-2 py-1 text-xs bg-red-100 text-red-800",
+  "default": "px-2 py-1 text-xs bg-gray-100 text-gray-800"
+};
+
+export const taskColumns: ColumnDef<Task>[] = [
   {
     accessorKey: "id",
     header: "ID",
   },
   {
-    accessorKey: "name",
-    header: "Project Name",
-    cell: ({ row }) => <span>{row.getValue("name") || "-"}</span>,
+    accessorKey: "title",
+    header: "Title",
+    cell: ({ row }) => <span>{row.getValue("title") || "-"}</span>,
   },
   {
-    accessorKey: "client_name",
-    header: "Client",
-    cell: ({ row }) => <span>{row.getValue("client_name") || "-"}</span>,
+    accessorKey: "project_name",
+    header: "Project",
+    cell: ({ row }) => <span>{row.getValue("project_name") || "-"}</span>,
+  },
+  {
+    accessorKey: "assignee_name",
+    header: "Assignee",
+    cell: ({ row }) => <span>{row.getValue("assignee_name") || "-"}</span>,
   },
   {
     accessorKey: "status",
@@ -59,7 +70,7 @@ export const projectColumns: ColumnDef<Project>[] = [
       const status = row.getValue("status") as string | null;
       return (
         <span
-          className={`inline-flex items-center rounded-full ${getStatusBadgeClass(status, projectStatusClasses)}`}
+          className={`inline-flex items-center rounded-full ${getStatusBadgeClass(status, taskStatusClasses)}`}
         >
           {status || "Unknown"}
         </span>
@@ -67,27 +78,24 @@ export const projectColumns: ColumnDef<Project>[] = [
     },
   },
   {
-    accessorKey: "budget",
-    header: "Budget",
+    accessorKey: "priority",
+    header: "Priority",
     cell: ({ row }) => {
-      const budget = row.getValue("budget") as number | null;
-      const currency = row.original.currency as string | undefined;
-      return <span>{formatCurrency(budget, currency)}</span>;
+      const priority = row.getValue("priority") as string | null;
+      return (
+        <span
+          className={`inline-flex items-center rounded-full ${getStatusBadgeClass(priority, priorityClasses)}`}
+        >
+          {priority || "Unknown"}
+        </span>
+      );
     },
   },
   {
-    accessorKey: "start_date",
-    header: "Start Date",
+    accessorKey: "due_date",
+    header: "Due Date",
     cell: ({ row }) => {
-      const date = row.getValue("start_date") as string | null;
-      return <span>{formatDate(date)}</span>;
-    },
-  },
-  {
-    accessorKey: "end_date",
-    header: "End Date",
-    cell: ({ row }) => {
-      const date = row.getValue("end_date") as string | null;
+      const date = row.getValue("due_date") as string | null;
       return <span>{formatDate(date)}</span>;
     },
   },
@@ -97,7 +105,7 @@ export const projectColumns: ColumnDef<Project>[] = [
       return (
         <div className="flex justify-end">
           <Button asChild size="sm" variant="outline" className="h-6 px-2 text-xs">
-            <Link href={`/projects/${row.original.id}`}>View</Link>
+            <Link href={`/tasks/${row.original.id}`}>View</Link>
           </Button>
         </div>
       );
@@ -105,13 +113,13 @@ export const projectColumns: ColumnDef<Project>[] = [
   },
 ];
 
-interface ProjectsTableProps {
-  initialData?: Project[];
+interface TasksTableProps {
+  initialData?: Task[];
   fixedTotalEntries?: number;
 }
 
-export function ProjectsTable({ initialData = [], fixedTotalEntries }: ProjectsTableProps) {
-  const [data, setData] = useState<Project[]>([]);
+export function TasksTable({ initialData = [], fixedTotalEntries }: TasksTableProps) {
+  const [data, setData] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
@@ -130,7 +138,7 @@ export function ProjectsTable({ initialData = [], fixedTotalEntries }: ProjectsT
       
       // First get the count of all records
       const { count, error: countError } = await supabase
-        .from('projects')
+        .from('tasks')
         .select('*', { count: 'exact', head: true });
       
       if (countError) {
@@ -147,11 +155,12 @@ export function ProjectsTable({ initialData = [], fixedTotalEntries }: ProjectsT
       }
       
       // Then fetch the data for the current page
-      const { data: projects, error } = await supabase
-        .from('projects')
+      const { data: tasks, error } = await supabase
+        .from('tasks')
         .select(`
           *,
-          clients(name)
+          projects(name),
+          profiles(full_name)
         `)
         .order('id', { ascending: false })
         .range(from, to);
@@ -160,15 +169,16 @@ export function ProjectsTable({ initialData = [], fixedTotalEntries }: ProjectsT
         throw error;
       }
       
-      // Map the client name from the joined table
-      const formattedProjects = projects.map((project) => ({
-        ...project,
-        client_name: project.clients?.name || null,
+      // Map the project name and assignee name from the joined tables
+      const formattedTasks = tasks.map((task) => ({
+        ...task,
+        project_name: task.projects?.name || null,
+        assignee_name: task.profiles?.full_name || null,
       }));
       
-      setData(formattedProjects || []);
+      setData(formattedTasks || []);
     } catch (err) {
-      console.error("Error fetching Projects:", err);
+      console.error("Error fetching Tasks:", err);
       
       // If there's an error, use initial data if available
       if (initialData.length > 0) {
@@ -192,12 +202,12 @@ export function ProjectsTable({ initialData = [], fixedTotalEntries }: ProjectsT
       <div className="flex justify-end mb-1">
         <Button className="gap-1 h-7 px-2 text-xs">
           <PlusCircle className="h-3 w-3 mr-1" />
-          Add Project
+          Add Task
         </Button>
       </div>
       
       <DataTable
-        columns={projectColumns}
+        columns={taskColumns}
         data={data}
         pageCount={pageCount}
         onPaginationChange={setPagination}

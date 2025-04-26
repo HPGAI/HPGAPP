@@ -11,44 +11,46 @@ import {
   calculatePaginationRange, 
   calculatePageCount, 
   formatDate, 
-  formatCurrency, 
+  formatCurrency,
   getStatusBadgeClass,
   defaultStatusClasses 
 } from "./utils";
-import { ModalForm } from "../../components/ui/modal-form";
-import { RfpForm } from "../../components/forms/rfp-form";
 
-// Define the RFP type
-export type Rfp = {
+export type Invoice = {
   id: number;
-  branch: string | null;
-  proposal_no: string | null;
-  file_no: string | null;
-  name: string | null;
-  status: string | null;
-  request_date: string | null;
-  deadline: string | null;
-  quoted_amount: number | null;
+  invoice_no: string | null;
+  project_id: number | null;
+  project_name: string | null;
+  amount: number | null;
   currency: string | null;
+  status: string | null;
+  date: string | null;
+  due_date: string | null;
 };
 
-// Define the columns for the RFPs table
-export const rfpColumns: ColumnDef<Rfp>[] = [
+export const invoiceColumns: ColumnDef<Invoice>[] = [
   {
     accessorKey: "id",
     header: "ID",
   },
   {
-    accessorKey: "proposal_no",
-    header: "Proposal #",
-    cell: ({ row }) => <span>{row.getValue("proposal_no") || "-"}</span>,
+    accessorKey: "invoice_no",
+    header: "Invoice #",
+    cell: ({ row }) => <span>{row.getValue("invoice_no") || "-"}</span>,
   },
   {
-    accessorKey: "name",
-    header: "Name",
-    cell: ({ row }) => (
-      <span className="font-medium">{row.getValue("name") || "-"}</span>
-    ),
+    accessorKey: "project_name",
+    header: "Project",
+    cell: ({ row }) => <span>{row.getValue("project_name") || "-"}</span>,
+  },
+  {
+    accessorKey: "amount",
+    header: "Amount",
+    cell: ({ row }) => {
+      const amount = row.getValue("amount") as number | null;
+      const currency = row.original.currency || "USD";
+      return <span>{formatCurrency(amount, currency)}</span>;
+    },
   },
   {
     accessorKey: "status",
@@ -65,32 +67,19 @@ export const rfpColumns: ColumnDef<Rfp>[] = [
     },
   },
   {
-    accessorKey: "request_date",
-    header: "Request Date",
+    accessorKey: "date",
+    header: "Issue Date",
     cell: ({ row }) => {
-      const date = row.getValue("request_date") as string | null;
+      const date = row.getValue("date") as string | null;
       return <span>{formatDate(date)}</span>;
     },
   },
   {
-    accessorKey: "deadline",
-    header: "Deadline",
+    accessorKey: "due_date",
+    header: "Due Date",
     cell: ({ row }) => {
-      const date = row.getValue("deadline") as string | null;
+      const date = row.getValue("due_date") as string | null;
       return <span>{formatDate(date)}</span>;
-    },
-  },
-  {
-    accessorKey: "quoted_amount",
-    header: "Amount",
-    cell: ({ row }) => {
-      const amount = row.getValue("quoted_amount") as number | null;
-      const currency = row.original.currency || "USD";
-      return (
-        <span className="text-right">
-          {formatCurrency(amount, currency)}
-        </span>
-      );
     },
   },
   {
@@ -99,7 +88,7 @@ export const rfpColumns: ColumnDef<Rfp>[] = [
       return (
         <div className="flex justify-end">
           <Button asChild size="sm" variant="outline" className="h-6 px-2 text-xs">
-            <Link href={`/rfps/${row.original.id}`}>View</Link>
+            <Link href={`/invoices/${row.original.id}`}>View</Link>
           </Button>
         </div>
       );
@@ -107,14 +96,13 @@ export const rfpColumns: ColumnDef<Rfp>[] = [
   },
 ];
 
-interface RfpsTableProps {
-  initialData?: Rfp[];
-  // Allow overriding total entries count for testing or demo purposes
+interface InvoicesTableProps {
+  initialData?: Invoice[];
   fixedTotalEntries?: number;
 }
 
-export function RfpsTable({ initialData = [], fixedTotalEntries }: RfpsTableProps) {
-  const [data, setData] = useState<Rfp[]>([]);
+export function InvoicesTable({ initialData = [], fixedTotalEntries }: InvoicesTableProps) {
+  const [data, setData] = useState<Invoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
@@ -122,9 +110,6 @@ export function RfpsTable({ initialData = [], fixedTotalEntries }: RfpsTableProp
   });
   const [pageCount, setPageCount] = useState(0);
   const [totalEntries, setTotalEntries] = useState<number | undefined>(fixedTotalEntries);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingRfp, setEditingRfp] = useState<Rfp | null>(null);
-  const [isEditMode, setIsEditMode] = useState(false);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -136,7 +121,7 @@ export function RfpsTable({ initialData = [], fixedTotalEntries }: RfpsTableProp
       
       // First get the count of all records
       const { count, error: countError } = await supabase
-        .from('rfps')
+        .from('invoices')
         .select('*', { count: 'exact', head: true });
       
       if (countError) {
@@ -153,9 +138,9 @@ export function RfpsTable({ initialData = [], fixedTotalEntries }: RfpsTableProp
       }
       
       // Then fetch the data for the current page
-      const { data: rfps, error } = await supabase
-        .from('rfps')
-        .select('*')
+      const { data: invoices, error } = await supabase
+        .from('invoices')
+        .select('*, projects(name)')
         .order('id', { ascending: false })
         .range(from, to);
       
@@ -163,9 +148,15 @@ export function RfpsTable({ initialData = [], fixedTotalEntries }: RfpsTableProp
         throw error;
       }
       
-      setData(rfps || []);
+      // Map the project name from the joined table
+      const formattedInvoices = invoices.map((invoice) => ({
+        ...invoice,
+        project_name: invoice.projects?.name || null,
+      }));
+      
+      setData(formattedInvoices || []);
     } catch (err) {
-      console.error("Error fetching RFPs:", err);
+      console.error("Error fetching Invoices:", err);
       
       // If there's an error, use initial data if available
       if (initialData.length > 0) {
@@ -184,67 +175,25 @@ export function RfpsTable({ initialData = [], fixedTotalEntries }: RfpsTableProp
     fetchData();
   }, [pagination.pageIndex, pagination.pageSize]);
 
-  const handleAddRfpSuccess = () => {
-    setIsModalOpen(false);
-    setEditingRfp(null);
-    setIsEditMode(false);
-    fetchData(); // Refresh the data to show the new RFP
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setEditingRfp(null);
-    setIsEditMode(false);
-  };
-
-  const handleRowDoubleClick = (rfp: Rfp) => {
-    setEditingRfp(rfp);
-    setIsEditMode(true);
-    setIsModalOpen(true);
-  };
-
   return (
     <div className="space-y-1">
       <div className="flex justify-end mb-1">
-        <Button 
-          className="gap-1 h-7 px-2 text-xs"
-          onClick={() => {
-            setEditingRfp(null);
-            setIsEditMode(false);
-            setIsModalOpen(true);
-          }}
-        >
+        <Button className="gap-1 h-7 px-2 text-xs">
           <PlusCircle className="h-3 w-3 mr-1" />
-          Add RFP
+          Add Invoice
         </Button>
       </div>
       
       <DataTable
-        columns={rfpColumns}
+        columns={invoiceColumns}
         data={data}
         pageCount={pageCount}
         onPaginationChange={setPagination}
         isLoading={isLoading}
         pageIndex={pagination.pageIndex}
         pageSize={pagination.pageSize}
-        totalEntries={totalEntries || 16} // Use 16 as fallback if we have no data yet
-        onRowDoubleClick={handleRowDoubleClick}
+        totalEntries={totalEntries}
       />
-
-      {/* Add/Edit RFP Modal */}
-      <ModalForm
-        title={isEditMode ? "Edit RFP" : "Add New RFP"}
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        size="lg"
-      >
-        <RfpForm 
-          onSuccess={handleAddRfpSuccess}
-          onCancel={handleCloseModal}
-          defaultValues={editingRfp || undefined}
-          isEditMode={isEditMode}
-        />
-      </ModalForm>
     </div>
   );
 } 
