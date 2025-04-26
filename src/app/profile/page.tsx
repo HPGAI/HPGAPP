@@ -2,7 +2,6 @@ import { redirect } from 'next/navigation'
 import { getServerClient } from '../../lib/supabase/index'
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card'
-import Breadcrumb from '../../components/breadcrumb'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -22,11 +21,7 @@ export default async function ProfilePage() {
   const { data: { user } } = await supabase.auth.getUser();
 
   return (
-    <div className="max-w-4xl mx-auto p-6 md:p-10">
-      <div className="mb-8">
-        <Breadcrumb items={[{ label: 'Profile' }]} />
-      </div>
-
+    <div className="max-w-6xl mx-auto px-4 py-6">
       <Card className="shadow-md">
         <CardHeader>
           <CardTitle>Profile Information</CardTitle>

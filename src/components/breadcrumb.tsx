@@ -32,7 +32,7 @@ export default function Breadcrumb({ items = [] }: BreadcrumbProps) {
         <li>
           <Link 
             href="/homepage" 
-            className="flex items-center hover:text-gray-900"
+            className={`flex items-center ${pathname === '/homepage' ? 'text-orange-500' : 'hover:text-gray-900'}`}
             aria-label="Home"
           >
             <Home className="h-4 w-4" />
@@ -50,7 +50,7 @@ export default function Breadcrumb({ items = [] }: BreadcrumbProps) {
                 {item.label}
               </Link>
             ) : (
-              <span className="font-medium text-gray-900">{item.label}</span>
+              <span className="font-medium text-orange-500">{item.label}</span>
             )}
           </li>
         ))}

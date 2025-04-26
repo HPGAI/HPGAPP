@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
 import { createClient } from '@/lib/supabase/client'
 
@@ -16,6 +17,10 @@ export default function ProfileDropdown({
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
+  const pathname = usePathname()
+  
+  // Determine if current page is profile page
+  const isProfileActive = pathname.startsWith('/profile')
   
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -63,7 +68,7 @@ export default function ProfileDropdown({
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Profile menu"
       >
-        <Avatar className="h-8 w-8 cursor-pointer">
+        <Avatar className={`h-8 w-8 cursor-pointer ${isProfileActive ? 'ring-2 ring-orange-500' : ''}`}>
           <AvatarImage src={user?.user_metadata?.avatar_url || ''} alt={displayName} />
           <AvatarFallback>{(user?.email || 'U').charAt(0).toUpperCase()}</AvatarFallback>
         </Avatar>
@@ -85,7 +90,7 @@ export default function ProfileDropdown({
           
           <Link 
             href="/profile" 
-            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+            className={`block px-4 py-2 text-sm ${isProfileActive ? 'text-orange-500 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
             onClick={() => setIsOpen(false)}
           >
             Your Profile
