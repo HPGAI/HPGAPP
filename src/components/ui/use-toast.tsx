@@ -118,10 +118,10 @@ const reducer = (state: State, action: Action): State => {
           toastTimeouts.delete(toastId);
         }
       } else {
-        for (const [id, timeout] of toastTimeouts.entries()) {
+        toastTimeouts.forEach((timeout, id) => {
           clearTimeout(timeout);
           toastTimeouts.delete(id);
-        }
+        });
       }
 
       return {
