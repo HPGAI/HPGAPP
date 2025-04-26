@@ -35,7 +35,7 @@ const rfpFormSchema = z.object({
   request_date: z.string().min(1, "Request date is required"),
   deadline: z.string().optional().nullable(),
   quoted_amount: z.coerce.number().optional().nullable(),
-  currency: z.string().default("USD"),
+  currency: z.string().optional(),
 });
 
 export type RfpFormValues = z.infer<typeof rfpFormSchema>;
@@ -299,11 +299,11 @@ export function RfpForm({ onSuccess, onCancel, defaultValues, isEditMode = false
             control={form.control}
             name="currency"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="w-1/3">
                 <FormLabel>Currency</FormLabel>
-                <Select 
-                  onValueChange={field.onChange} 
-                  defaultValue={field.value}
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value || "USD"}
                 >
                   <FormControl>
                     <SelectTrigger>
