@@ -17,6 +17,7 @@ import {
 } from "./utils";
 import { ModalForm } from "../../components/ui/modal-form";
 import { RfpForm } from "../../components/forms/rfp-form";
+import { RealtimeChannel } from "@supabase/supabase-js";
 
 // Define the RFP type
 export type Rfp = {
@@ -180,6 +181,116 @@ export function RfpsTable({ initialData = [], fixedTotalEntries }: RfpsTableProp
     }
   };
 
+  // Set up Supabase realtime subscription
+  useEffect(() => {
+    const supabase = createClient();
+    
+    // Enable realtime subscriptions for this table
+    let channel: RealtimeChannel;
+    
+    const setupRealtimeSubscription = async () => {
+      try {
+        // Subscribe to changes on the rfps table
+        channel = supabase
+          .channel('rfps-changes')
+          .on('postgres_changes', 
+            { 
+              event: 'INSERT', 
+              schema: 'public', 
+              table: 'rfps' 
+            }, 
+            (payload) => {
+              console.log('New record inserted:', payload);
+              // If we're on the first page, add the new record to the top of the data
+              if (pagination.pageIndex === 0) {
+                // Add the new record at the beginning of the array
+                const newRfp = payload.new as Rfp;
+                setData(prevData => {
+                  // Only add if it doesn't exceed page size
+                  if (prevData.length < pagination.pageSize) {
+                    return [newRfp, ...prevData.slice(0, pagination.pageSize - 1)];
+                  }
+                  return [newRfp, ...prevData.slice(0, pagination.pageSize - 1)];
+                });
+                
+                // Update total entries count
+                setTotalEntries(prev => prev !== undefined ? prev + 1 : 1);
+                setPageCount(calculatePageCount((totalEntries || 0) + 1, pagination.pageSize));
+              } else {
+                // For other pages, just update the count but not the data
+                setTotalEntries(prev => prev !== undefined ? prev + 1 : 1);
+                setPageCount(calculatePageCount((totalEntries || 0) + 1, pagination.pageSize));
+              }
+            }
+          )
+          .on('postgres_changes', 
+            { 
+              event: 'UPDATE', 
+              schema: 'public', 
+              table: 'rfps' 
+            }, 
+            (payload) => {
+              console.log('Record updated:', payload);
+              // Update the record in the current data if it exists
+              const updatedRfp = payload.new as Rfp;
+              setData(prevData => 
+                prevData.map(rfp => 
+                  rfp.id === updatedRfp.id ? updatedRfp : rfp
+                )
+              );
+            }
+          )
+          .on('postgres_changes', 
+            { 
+              event: 'DELETE', 
+              schema: 'public', 
+              table: 'rfps' 
+            }, 
+            (payload) => {
+              console.log('Record deleted:', payload);
+              // Remove the record from the current data if it exists
+              const deletedRfpId = payload.old.id;
+              setData(prevData => 
+                prevData.filter(rfp => rfp.id !== deletedRfpId)
+              );
+              
+              // Update total entries count
+              setTotalEntries(prev => prev !== undefined && prev > 0 ? prev - 1 : 0);
+              setPageCount(calculatePageCount(Math.max((totalEntries || 0) - 1, 0), pagination.pageSize));
+              
+              // If we've deleted the last item on the page and there are more pages,
+              // fetch data again to pull in the next record
+              if (data.length === 1 && pageCount > 1) {
+                fetchData();
+              }
+            }
+          )
+          .subscribe((status, err) => {
+            if (err) {
+              console.error('Error setting up realtime subscription:', err);
+            } else {
+              console.log('Realtime subscription status:', status);
+            }
+          });
+      } catch (error) {
+        console.error('Failed to set up realtime subscription:', error);
+        // Fallback to polling if realtime fails
+        const pollingInterval = setInterval(fetchData, 10000); // Poll every 10 seconds
+        return () => clearInterval(pollingInterval);
+      }
+    };
+    
+    setupRealtimeSubscription();
+    
+    // Clean up subscription when component unmounts
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [pagination.pageIndex, pagination.pageSize, totalEntries, data.length, pageCount]); // Include all dependencies
+  
+  // Initial data fetch
   useEffect(() => {
     fetchData();
   }, [pagination.pageIndex, pagination.pageSize]);
@@ -188,7 +299,7 @@ export function RfpsTable({ initialData = [], fixedTotalEntries }: RfpsTableProp
     setIsModalOpen(false);
     setEditingRfp(null);
     setIsEditMode(false);
-    fetchData(); // Refresh the data to show the new RFP
+    // No need to manually refresh the data since we're using realtime subscriptions
   };
 
   const handleCloseModal = () => {
