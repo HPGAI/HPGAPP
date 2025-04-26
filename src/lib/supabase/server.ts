@@ -8,21 +8,22 @@ const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGci
 // Set up for Edge runtime compatibility
 export const runtime = 'edge'
 
-export function createClient() {
-  const cookieStore = cookies()
-  
+export async function createClient() {
   return createServerClient(
     SUPABASE_URL,
     SUPABASE_ANON_KEY,
     {
       cookies: {
-        get(name: string) {
+        async get(name: string) {
+          const cookieStore = await cookies()
           return cookieStore.get(name)?.value
         },
-        set(name: string, value: string, options: CookieOptions) {
+        async set(name: string, value: string, options: CookieOptions) {
+          const cookieStore = await cookies()
           cookieStore.set({ name, value, ...options })
         },
-        remove(name: string, options: CookieOptions) {
+        async remove(name: string, options: CookieOptions) {
+          const cookieStore = await cookies()
           cookieStore.set({ name, value: '', ...options })
         },
       },

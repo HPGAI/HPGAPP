@@ -38,10 +38,8 @@ export function createClient(request: NextRequest) {
         },
         remove(name: string, options: CookieOptions) {
           // If the cookie is removed, update the cookies for the request and response
-          request.cookies.delete({
-            name,
-            ...options,
-          })
+          request.cookies.delete(name)
+          
           response = NextResponse.next({
             request: {
               headers: request.headers,
@@ -93,10 +91,9 @@ export async function updateSession(request: NextRequest) {
           })
         },
         remove(name: string, options: CookieOptions) {
-          request.cookies.delete({
-            name,
-            ...options,
-          })
+          // If the cookie is removed, update the cookies for the request and response
+          request.cookies.delete(name)
+          
           supabaseResponse = NextResponse.next({
             request: {
               headers: request.headers,

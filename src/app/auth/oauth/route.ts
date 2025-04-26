@@ -16,21 +16,22 @@ export async function GET(request: Request) {
   
   if (code) {
     try {
-      const cookieStore = cookies()
-      
       // Create the Supabase client with the Next.js 15 compatible pattern
       const supabase = createServerClient(
         SUPABASE_URL,
         SUPABASE_ANON_KEY,
         {
           cookies: {
-            get(name) {
+            async get(name) {
+              const cookieStore = await cookies()
               return cookieStore.get(name)?.value
             },
-            set(name, value, options) {
+            async set(name, value, options) {
+              const cookieStore = await cookies()
               cookieStore.set({ name, value, ...options })
             },
-            remove(name, options) {
+            async remove(name, options) {
+              const cookieStore = await cookies()
               cookieStore.set({ name, value: '', ...options })
             }
           }
