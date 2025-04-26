@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { getServerClient } from '../../lib/supabase/index'
+import { getServerClient } from '../../lib/supabase'
 import AppHeader from '../../components/app-header'
 import AppFooter from '../../components/app-footer'
 
@@ -31,7 +31,13 @@ export default async function HomepageLayout({
         {children}
       </main>
       
-      <AppFooter />
+      <footer className="bg-white border-t py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <p className="text-center text-sm text-gray-500">
+            © {new Date().getFullYear()} HPG App. All rights reserved.
+          </p>
+        </div>
+      </footer>
     </div>
   )
 } 

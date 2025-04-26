@@ -26,13 +26,17 @@ export default function Breadcrumb({ items = [] }: BreadcrumbProps) {
         return { label, href }
       })
 
+  // Determine if we're in the protected or homepage section
+  const isProtectedSection = pathname.includes('/protected')
+  const homePath = isProtectedSection ? '/protected' : '/homepage'
+
   return (
     <nav className="flex items-center text-sm text-gray-500" aria-label="Breadcrumb">
       <ol className="flex items-center space-x-1">
         <li>
           <Link 
-            href="/homepage" 
-            className={`flex items-center ${pathname === '/homepage' ? 'text-orange-500' : 'hover:text-gray-900'}`}
+            href={homePath}
+            className={`flex items-center ${pathname === homePath ? 'text-orange-500' : 'hover:text-gray-900'}`}
             aria-label="Home"
           >
             <Home className="h-4 w-4" />

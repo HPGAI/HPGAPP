@@ -1,0 +1,60 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# UI Component Libraries & Frameworks
+
+This document outlines the specific UI components and libraries that should be used throughout this project.
+
+## Core Libraries
+
+- **Next.js**: Use the latest version (currently v15.x) for the framework
+- **React**: Use the latest version (currently v19.x)
+- **TypeScript**: For type safety throughout the project
+
+## UI Components
+
+### Primary Component Library
+
+- **shadcn/ui**: This should be the primary component library for all UI elements
+  - Reasoning: Most seamless, future-proof UI layer for Supabase + Next.js applications
+  - Use the existing components.json configuration
+  - Import components from @/components/ui/[component-name]
+
+### Data Tables
+
+- **TanStack Table** (latest version): Use for all data table needs
+  - Install with: `npm install @tanstack/react-table`
+  - Prefer the headless approach (no styling) and combine with shadcn/ui styling
+
+### Styling
+
+- **Tailwind CSS**: Use for all styling needs
+  - Already configured in the project
+  - Follow the shadcn/ui conventions for component styling
+  - Use the class-variance-authority (cva) pattern for component variants
+
+## Integration Guidelines
+
+1. **Supabase Integration**: Fully embrace Supabase for backend functionality
+   - Use Supabase Auth for authentication
+   - Use Supabase Database for data storage
+   - Use Supabase Storage for file storage when needed
+
+2. **Component Composition**:
+   - Build complex components by composing shadcn/ui primitives
+   - Extend shadcn/ui components rather than creating alternatives
+   - Follow the shadcn/ui pattern of composition over configuration
+
+3. **Custom Components**:
+   - When building custom components, follow the shadcn/ui architecture
+   - Place in appropriate directories following the project structure
+   - Use Tailwind CSS for styling
+
+## Implementation Notes
+
+- Install missing components from shadcn/ui using the CLI: `npx shadcn-ui add [component]`
+- When implementing TanStack Table, use the shadcn Table component as a base, then extend with TanStack Table functionality
+- Maintain TypeScript types throughout the component hierarchy
+

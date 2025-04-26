@@ -52,33 +52,47 @@ export async function middleware(request: NextRequest) {
       // If user is logged in and trying to access login page without logout params,
       // redirect to homepage
       if (session && !hasLogoutParam) {
-        return NextResponse.redirect(new URL('/homepage', request.url))
+        return NextResponse.redirect(new URL('/dashboard', request.url))
       }
       
       // Otherwise, allow access to login page
       return response
     }
-
-    // Handle legacy routes for compatibility
-    if (url.pathname.startsWith('/protected')) {
-      if (url.pathname === '/protected/profile') {
-        return NextResponse.redirect(new URL('/profile', request.url))
+    
+    // Handle legacy /homepage/rfps route
+    if (url.pathname === '/homepage/rfps') {
+      if (session) {
+        return NextResponse.redirect(new URL('/rfps', request.url))
+      } else {
+        return NextResponse.redirect(new URL('/auth/login?returnTo=/rfps', request.url))
       }
-      // For other protected paths, redirect to the equivalent homepage path
-      const newPath = url.pathname.replace('/protected', '/homepage')
-      return NextResponse.redirect(new URL(newPath, request.url))
     }
 
-    // Handle legacy nested profile route
+    // Handle legacy /protected/rfps route
+    if (url.pathname === '/protected/rfps') {
+      if (session) {
+        return NextResponse.redirect(new URL('/rfps', request.url))
+      } else {
+        return NextResponse.redirect(new URL('/auth/login?returnTo=/rfps', request.url))
+      }
+    }
+
+    // Legacy profile route handling
     if (url.pathname === '/homepage/profile') {
       return NextResponse.redirect(new URL('/profile', request.url))
     }
 
-    // If the request is for a protected route, verify authentication
-    if (url.pathname.startsWith('/homepage') || url.pathname.startsWith('/profile')) {
+    // Protected routes require authentication
+    if (url.pathname.startsWith('/protected') || 
+        url.pathname.startsWith('/homepage') || 
+        url.pathname.startsWith('/profile') ||
+        url.pathname.startsWith('/rfps') ||
+        url.pathname === '/dashboard') {
       // If no session, redirect to login
       if (!session) {
-        return NextResponse.redirect(new URL('/auth/login', request.url))
+        // Store the attempted URL as a return path
+        const returnTo = encodeURIComponent(url.pathname)
+        return NextResponse.redirect(new URL(`/auth/login?returnTo=${returnTo}`, request.url))
       }
     }
 

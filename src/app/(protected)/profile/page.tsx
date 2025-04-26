@@ -1,7 +1,9 @@
 import { redirect } from 'next/navigation'
-import { getServerClient } from '../../lib/supabase/index'
-import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card'
+import { Button } from '../../../components/ui/button'
+import Link from 'next/link'
+import { getServerClient } from '../../../lib/supabase/index'
+import { Avatar, AvatarFallback, AvatarImage } from '../../../components/ui/avatar'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -21,7 +23,19 @@ export default async function ProfilePage() {
   const { data: { user } } = await supabase.auth.getUser();
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6">
+    <div className="max-w-4xl mx-auto p-6 md:p-10">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">Your Profile</h1>
+        <div className="flex gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/dashboard">Dashboard</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/">Home</Link>
+          </Button>
+        </div>
+      </div>
+
       <Card className="shadow-md">
         <CardHeader>
           <CardTitle>Profile Information</CardTitle>
@@ -67,5 +81,5 @@ export default async function ProfilePage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 } 
