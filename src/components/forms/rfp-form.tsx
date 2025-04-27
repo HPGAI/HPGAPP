@@ -23,7 +23,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../components/ui/select";
+import { Separator } from "../../components/ui/separator";
 import { toast } from "../../components/ui/use-toast";
+import { ContactSelector } from "./contact-selector";
+import { fetchCurrencies, type Currency, calculateExchangeRate } from "../../lib/currency";
+import { branchOptions, fetchRfpStatuses, type RfpStatus, getStatusIdByName, getStatusNameById } from "../../lib/rfp-options";
 
 // Define the form schema using Zod
 const rfpFormSchema = z.object({
@@ -31,29 +35,16 @@ const rfpFormSchema = z.object({
   proposal_no: z.string().min(1, "Proposal number is required"),
   file_no: z.string().optional().nullable(),
   name: z.string().min(1, "Name is required"),
+  status_id: z.coerce.number().optional().nullable(),
   status: z.string().min(1, "Status is required"),
   request_date: z.string().min(1, "Request date is required"),
   deadline: z.string().optional().nullable(),
   quoted_amount: z.coerce.number().optional().nullable(),
   currency: z.string().optional(),
+  contacts_id: z.number().optional().nullable(),
 });
 
 export type RfpFormValues = z.infer<typeof rfpFormSchema>;
-
-// Status options
-const statusOptions = [
-  "Pending",
-  "Approved",
-  "Rejected",
-  "In Review",
-  "Completed",
-  "In Progress",
-  "On Hold",
-  "Cancelled",
-];
-
-// Currency options
-const currencyOptions = ["USD", "EUR", "GBP", "CAD", "AUD", "JPY"];
 
 interface RfpFormProps {
   onSuccess?: () => void;
@@ -65,16 +56,25 @@ interface RfpFormProps {
     file_no?: string | null;
     name?: string | null;
     status?: string | null;
+    status_id?: number | null;
     request_date?: string | null;
     deadline?: string | null;
     quoted_amount?: number | null;
     currency?: string | null;
+    contacts_id?: number | null;
   };
   isEditMode?: boolean;
 }
 
 export function RfpForm({ onSuccess, onCancel, defaultValues, isEditMode = false }: RfpFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currencies, setCurrencies] = useState<Currency[]>([]);
+  const [statuses, setStatuses] = useState<RfpStatus[]>([]);
+  const [isLoadingCurrencies, setIsLoadingCurrencies] = useState(true);
+  const [isLoadingStatuses, setIsLoadingStatuses] = useState(true);
+  const [selectedCurrency, setSelectedCurrency] = useState<Currency | null>(null);
+  const [showConversion, setShowConversion] = useState(false);
+  const [convertedAmount, setConvertedAmount] = useState<number | null>(null);
 
   // Initialize form with default values
   const form = useForm<RfpFormValues>({
@@ -85,12 +85,118 @@ export function RfpForm({ onSuccess, onCancel, defaultValues, isEditMode = false
       file_no: defaultValues?.file_no || "",
       name: defaultValues?.name || "",
       status: defaultValues?.status || "Pending",
+      status_id: defaultValues?.status_id || null,
       request_date: defaultValues?.request_date || new Date().toISOString().split("T")[0],
       deadline: defaultValues?.deadline || "",
       quoted_amount: defaultValues?.quoted_amount || null,
-      currency: defaultValues?.currency || "USD",
+      currency: defaultValues?.currency || "INR",
+      contacts_id: defaultValues?.contacts_id || null,
     },
   });
+
+  // Fetch currencies from Supabase
+  useEffect(() => {
+    async function loadCurrencies() {
+      setIsLoadingCurrencies(true);
+      try {
+        const currencyData = await fetchCurrencies();
+        setCurrencies(currencyData);
+        
+        // Find the default or selected currency
+        const currencyCode = form.getValues("currency") || "INR";
+        const currency = currencyData.find(c => c.code === currencyCode);
+        if (currency) {
+          setSelectedCurrency(currency);
+        }
+      } catch (error) {
+        console.error('Error fetching currencies:', error);
+        // Fallback to default currency (INR) if fetching fails
+        setCurrencies([
+          { id: 1, code: 'INR', name: 'Indian Rupee', symbol: '₹', conversion_rate: 1 }
+        ]);
+      } finally {
+        setIsLoadingCurrencies(false);
+      }
+    }
+    
+    loadCurrencies();
+  }, [form]);
+  
+  // Fetch RFP statuses from Supabase
+  useEffect(() => {
+    async function loadStatuses() {
+      setIsLoadingStatuses(true);
+      try {
+        const statusData = await fetchRfpStatuses();
+        setStatuses(statusData);
+        
+        // If we have a status name but no status_id, try to get the ID
+        const statusName = form.getValues("status");
+        const statusId = form.getValues("status_id");
+        
+        if (statusName && !statusId) {
+          // Find the status ID from the fetched data first (faster)
+          const matchedStatus = statusData.find(s => s.name === statusName);
+          if (matchedStatus) {
+            form.setValue("status_id", matchedStatus.id);
+          } else {
+            // If not found in the fetched data, try to get from the database
+            const id = await getStatusIdByName(statusName);
+            if (id) {
+              form.setValue("status_id", id);
+            }
+          }
+        } else if (statusId && !statusName) {
+          // Find the status name from the fetched data first (faster)
+          const matchedStatus = statusData.find(s => s.id === statusId);
+          if (matchedStatus) {
+            form.setValue("status", matchedStatus.name);
+          } else {
+            // If not found in the fetched data, try to get from the database
+            const name = await getStatusNameById(statusId);
+            if (name) {
+              form.setValue("status", name);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching RFP statuses:', error);
+        // Fallback to hardcoded statuses if fetching fails
+        setStatuses([
+          { id: 1, name: 'Pending' },
+          { id: 2, name: 'Approved' },
+          { id: 3, name: 'Rejected' },
+          { id: 4, name: 'In Review' },
+          { id: 5, name: 'Completed' },
+          { id: 6, name: 'In Progress' },
+          { id: 7, name: 'On Hold' },
+          { id: 8, name: 'Cancelled' }
+        ]);
+      } finally {
+        setIsLoadingStatuses(false);
+      }
+    }
+    
+    loadStatuses();
+  }, [form]);
+
+  // Update the converted amount when the quoted amount or currency changes
+  useEffect(() => {
+    if (selectedCurrency && selectedCurrency.code !== 'INR') {
+      const amount = form.getValues('quoted_amount');
+      if (amount && !isNaN(amount)) {
+        // Convert to INR using the stored conversion rate
+        const inrAmount = amount * selectedCurrency.conversion_rate;
+        setConvertedAmount(Math.round(inrAmount * 100) / 100);
+        setShowConversion(true);
+      } else {
+        setConvertedAmount(null);
+        setShowConversion(false);
+      }
+    } else {
+      setShowConversion(false);
+    }
+  }, [selectedCurrency, form.watch('quoted_amount')]);
 
   // Reset form when defaultValues change
   useEffect(() => {
@@ -101,24 +207,49 @@ export function RfpForm({ onSuccess, onCancel, defaultValues, isEditMode = false
         file_no: defaultValues.file_no || "",
         name: defaultValues.name || "",
         status: defaultValues.status || "Pending",
+        status_id: defaultValues.status_id || null,
         request_date: defaultValues.request_date || new Date().toISOString().split("T")[0],
         deadline: defaultValues.deadline || "",
         quoted_amount: defaultValues.quoted_amount || null,
-        currency: defaultValues.currency || "USD",
+        currency: defaultValues.currency || "INR",
+        contacts_id: defaultValues.contacts_id || null,
       });
     }
   }, [defaultValues, form]);
+
+  // Set today's date as the default request date if not already set
+  useEffect(() => {
+    const currentDate = new Date().toISOString().split("T")[0];
+    const requestDate = form.getValues("request_date");
+    
+    if (!requestDate || requestDate.trim() === "") {
+      form.setValue("request_date", currentDate);
+    }
+  }, [form]);
 
   async function onSubmit(values: RfpFormValues) {
     setIsSubmitting(true);
     try {
       const supabase = createClient();
       
+      // Clean up empty values before submitting
+      const cleanedValues = {
+        ...values,
+        // Remove status_id as it doesn't exist in the table yet
+        status_id: undefined,
+        // Ensure request_date is properly set
+        request_date: values.request_date && values.request_date.trim() !== "" ? values.request_date : null,
+        // Ensure deadline is properly set to null if empty
+        deadline: values.deadline && values.deadline.trim() !== "" ? values.deadline : null,
+        // Ensure quoted_amount is null if undefined or empty string
+        quoted_amount: values.quoted_amount === undefined ? null : values.quoted_amount,
+      };
+      
       if (isEditMode && defaultValues?.id) {
         // Update existing RFP
         const { error } = await supabase
           .from("rfps")
-          .update(values)
+          .update(cleanedValues)
           .eq("id", defaultValues.id);
         
         if (error) throw error;
@@ -131,7 +262,7 @@ export function RfpForm({ onSuccess, onCancel, defaultValues, isEditMode = false
         // Create new RFP
         const { error } = await supabase
           .from("rfps")
-          .insert([values]);
+          .insert([cleanedValues]);
         
         if (error) throw error;
         
@@ -154,6 +285,130 @@ export function RfpForm({ onSuccess, onCancel, defaultValues, isEditMode = false
       setIsSubmitting(false);
     }
   }
+  
+  // Branch dropdown component
+  const BranchField = () => (
+    <FormField
+      control={form.control}
+      name="branch"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>Branch</FormLabel>
+          <Select
+            onValueChange={field.onChange}
+            value={field.value || ""}
+          >
+            <FormControl>
+              <SelectTrigger>
+                <SelectValue placeholder="Select branch" />
+              </SelectTrigger>
+            </FormControl>
+            <SelectContent>
+              {branchOptions.map((branch) => (
+                <SelectItem key={branch} value={branch}>
+                  {branch}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+  
+  // Status dropdown component
+  const StatusField = () => (
+    <FormField
+      control={form.control}
+      name="status_id"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>Status *</FormLabel>
+          <Select
+            onValueChange={(value) => {
+              field.onChange(parseInt(value));
+              // Also set the status name for backward compatibility
+              const status = statuses.find(s => s.id === parseInt(value));
+              if (status) {
+                form.setValue("status", status.name);
+              }
+            }}
+            value={field.value?.toString() || ""}
+            disabled={isLoadingStatuses}
+          >
+            <FormControl>
+              <SelectTrigger>
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+            </FormControl>
+            <SelectContent>
+              {statuses.map((status) => (
+                <SelectItem key={status.id} value={status.id.toString()}>
+                  {status.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {isLoadingStatuses && <p className="text-xs text-muted-foreground">Loading statuses...</p>}
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+
+  // Currency dropdown component
+  const CurrencyField = () => (
+    <FormField
+      control={form.control}
+      name="currency"
+      render={({ field }) => (
+        <FormItem className="w-full">
+          <FormLabel>Currency</FormLabel>
+          <Select
+            onValueChange={(value) => {
+              field.onChange(value);
+              const currency = currencies.find(c => c.code === value);
+              if (currency) {
+                setSelectedCurrency(currency);
+              }
+            }}
+            defaultValue={field.value || "INR"}
+            value={field.value || "INR"}
+            disabled={isLoadingCurrencies}
+          >
+            <FormControl>
+              <SelectTrigger>
+                <SelectValue placeholder="Select currency" />
+              </SelectTrigger>
+            </FormControl>
+            <SelectContent>
+              {currencies.map((currency) => (
+                <SelectItem key={currency.code} value={currency.code}>
+                  {currency.symbol} {currency.code} - {currency.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {isLoadingCurrencies && <p className="text-xs text-muted-foreground">Loading currencies...</p>}
+          {selectedCurrency && selectedCurrency.code !== 'INR' && (
+            <p className="text-xs text-muted-foreground">
+              Conversion rate: 1 {selectedCurrency.code} = {selectedCurrency.conversion_rate.toFixed(4)} INR
+            </p>
+          )}
+          {showConversion && convertedAmount !== null && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Equivalent: ₹ {convertedAmount.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+              })} INR
+            </p>
+          )}
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
 
   return (
     <Form {...form}>
@@ -187,19 +442,7 @@ export function RfpForm({ onSuccess, onCancel, defaultValues, isEditMode = false
             )}
           />
           
-          <FormField
-            control={form.control}
-            name="branch"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Branch</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter branch" {...field} value={field.value || ""} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <BranchField />
           
           <FormField
             control={form.control}
@@ -215,34 +458,7 @@ export function RfpForm({ onSuccess, onCancel, defaultValues, isEditMode = false
             )}
           />
           
-          <FormField
-            control={form.control}
-            name="status"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Status *</FormLabel>
-                <Select 
-                  onValueChange={field.onChange} 
-                  defaultValue={field.value}
-                  value={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {statusOptions.map((status) => (
-                      <SelectItem key={status} value={status}>
-                        {status}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <StatusField />
           
           <FormField
             control={form.control}
@@ -251,7 +467,16 @@ export function RfpForm({ onSuccess, onCancel, defaultValues, isEditMode = false
               <FormItem>
                 <FormLabel>Request Date *</FormLabel>
                 <FormControl>
-                  <Input type="date" {...field} />
+                  <Input 
+                    type="date" 
+                    {...field} 
+                    value={field.value || new Date().toISOString().split("T")[0]}
+                    onChange={(e) => {
+                      // If empty, set to today's date
+                      const value = e.target.value || new Date().toISOString().split("T")[0];
+                      field.onChange(value);
+                    }}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -265,7 +490,15 @@ export function RfpForm({ onSuccess, onCancel, defaultValues, isEditMode = false
               <FormItem>
                 <FormLabel>Deadline</FormLabel>
                 <FormControl>
-                  <Input type="date" {...field} value={field.value || ""} />
+                  <Input 
+                    type="date" 
+                    {...field} 
+                    value={field.value || ""}
+                    onChange={(e) => {
+                      // Allow empty value (it will be converted to null later)
+                      field.onChange(e.target.value);
+                    }}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -283,9 +516,10 @@ export function RfpForm({ onSuccess, onCancel, defaultValues, isEditMode = false
                     type="number" 
                     placeholder="Enter amount" 
                     {...field} 
-                    value={field.value === null ? "" : field.value}
+                    value={field.value === null || field.value === undefined ? "" : field.value}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      const value = e.target.value === "" ? null : Number(e.target.value);
+                      // Empty string becomes null, otherwise convert to number
+                      const value = e.target.value === "" ? null : parseFloat(e.target.value);
                       field.onChange(value);
                     }}
                   />
@@ -295,35 +529,31 @@ export function RfpForm({ onSuccess, onCancel, defaultValues, isEditMode = false
             )}
           />
           
+          <CurrencyField />
+        </div>
+        
+        <div className="my-6">
+          <Separator className="my-4" />
+          <h3 className="text-lg font-medium mb-4">Contact Information</h3>
+          
           <FormField
             control={form.control}
-            name="currency"
+            name="contacts_id"
             render={({ field }) => (
-              <FormItem className="w-1/3">
-                <FormLabel>Currency</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value || "USD"}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select currency" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {currencyOptions.map((currency) => (
-                      <SelectItem key={currency} value={currency}>
-                        {currency}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <FormItem>
+                <FormLabel>Client Contact</FormLabel>
+                <FormControl>
+                  <ContactSelector 
+                    value={field.value || null} 
+                    onChange={(value) => field.onChange(value)}
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
-        
+
         <div className="flex justify-end space-x-2 pt-4">
           {onCancel && (
             <Button 

@@ -28,6 +28,21 @@ export type Rfp = {
   path: string | null;
 };
 
+export type RfpFilters = {
+  search?: string;
+  status?: string;
+  branch?: string;
+  category?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  minAmount?: number;
+  maxAmount?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  page?: number;
+  pageSize?: number;
+};
+
 export async function getRfps() {
   const supabase = createClient();
   
@@ -42,6 +57,96 @@ export async function getRfps() {
   }
   
   return data as Rfp[];
+}
+
+/**
+ * Get filtered RFPs with server-side filtering and pagination
+ */
+export async function getFilteredRfps(filters: RfpFilters = {}) {
+  const supabase = createClient();
+  
+  // Default values
+  const {
+    search = '',
+    status,
+    branch,
+    category,
+    dateFrom,
+    dateTo,
+    minAmount,
+    maxAmount,
+    sortBy = 'id',
+    sortOrder = 'desc',
+    page = 1,
+    pageSize = 10
+  } = filters;
+  
+  // Start building the query
+  let query = supabase
+    .from('rfps')
+    .select('*', { count: 'exact' });
+  
+  // Apply search filter (across multiple columns)
+  if (search) {
+    query = query.or(
+      `name.ilike.%${search}%,proposal_no.ilike.%${search}%,file_no.ilike.%${search}%,operator.ilike.%${search}%`
+    );
+  }
+  
+  // Apply specific filters
+  if (status) {
+    query = query.eq('status', status);
+  }
+  
+  if (branch) {
+    query = query.eq('branch', branch);
+  }
+  
+  if (category) {
+    query = query.eq('category', category);
+  }
+  
+  // Date range filters
+  if (dateFrom) {
+    query = query.gte('request_date', dateFrom);
+  }
+  
+  if (dateTo) {
+    query = query.lte('request_date', dateTo);
+  }
+  
+  // Amount range filters
+  if (minAmount !== undefined) {
+    query = query.gte('quoted_amount', minAmount);
+  }
+  
+  if (maxAmount !== undefined) {
+    query = query.lte('quoted_amount', maxAmount);
+  }
+  
+  // Apply sorting
+  query = query.order(sortBy, { ascending: sortOrder === 'asc' });
+  
+  // Apply pagination
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+  query = query.range(from, to);
+  
+  // Execute the query
+  const { data, error, count } = await query;
+  
+  if (error) {
+    console.error('Error fetching filtered RFPs:', error);
+    throw new Error('Failed to fetch filtered RFPs');
+  }
+  
+  return {
+    data: data as Rfp[],
+    count: count || 0,
+    page,
+    pageSize,
+    totalPages: count ? Math.ceil(count / pageSize) : 0
+  };
 }
 
 export async function getRfp(id: number) {

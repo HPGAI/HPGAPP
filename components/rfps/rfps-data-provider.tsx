@@ -3,6 +3,7 @@
 import { RfpsTable } from "./rfps-table";
 import { getServerClient } from "../../src/lib/supabase";
 import { Loader2 } from "lucide-react";
+import { getFilteredRfps } from "../../src/lib/rfps";
 
 // Loading component
 function RfpsLoading() {
@@ -15,25 +16,15 @@ function RfpsLoading() {
 }
 
 export async function RfpsDataProvider() {
-  const supabase = await getServerClient();
-  
   try {
-    const { data: rfps, error } = await supabase
-      .from('rfps')
-      .select('*')
-      .order('id', { ascending: false });
+    // Get initial RFPs with default settings
+    const { data: rfps, count } = await getFilteredRfps({
+      page: 1,
+      pageSize: 10,
+      sortBy: 'id',
+      sortOrder: 'desc'
+    });
       
-    if (error) {
-      console.error('Error fetching RFPs:', error);
-      return (
-        <div className="bg-red-50 border border-red-200 text-red-800 rounded-md p-4 my-4">
-          <h3 className="text-lg font-medium mb-2">Error loading RFPs</h3>
-          <p className="text-sm">There was a problem connecting to the database. Please try again later.</p>
-          <p className="text-xs mt-2 text-red-600">{error.message}</p>
-        </div>
-      );
-    }
-
     if (!rfps || rfps.length === 0) {
       return (
         <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-md p-4 my-4">

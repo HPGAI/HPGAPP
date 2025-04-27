@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { getServerClient } from '../../../lib/supabase/index'
 import { Avatar, AvatarFallback, AvatarImage } from '../../../components/ui/avatar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card'
+import RoleDisplay from '../components/RoleDisplay'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -36,7 +37,7 @@ export default async function ProfilePage() {
         </div>
       </div>
 
-      <Card className="shadow-md">
+      <Card className="shadow-md mb-6">
         <CardHeader>
           <CardTitle>Profile Information</CardTitle>
           <CardDescription>Manage your account details and preferences</CardDescription>
@@ -78,6 +79,17 @@ export default async function ProfilePage() {
               </div>
             </div>
           </div>
+        </CardContent>
+      </Card>
+      
+      {/* User Roles Card */}
+      <Card className="shadow-md">
+        <CardHeader>
+          <CardTitle>User Roles</CardTitle>
+          <CardDescription>Your assigned roles and permissions in the system</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <RoleDisplay />
         </CardContent>
       </Card>
     </div>
