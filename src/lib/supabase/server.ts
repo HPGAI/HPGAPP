@@ -30,8 +30,8 @@ export async function createAppServerClient() {
       throw new Error('This function can only be used in App Router server components');
     }
     
-    // Get cookie store from Next.js App Router
-    const cookieStore = cookies();
+    // Get cookie store from Next.js App Router - IMPORTANT: await the cookies
+    const cookieStore = await cookies();
     
     // Create the Supabase client
     const client = createServerClient(
