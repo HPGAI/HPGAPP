@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { DataTable } from "../../components/ui/data-table";
 import { createClient } from "../../lib/supabase";
 import { Button } from "../../components/ui/button";
-import { PlusCircle, Search, Filter, X, ChevronDown, CheckCircle } from "lucide-react";
+import { PlusCircle, Search, Filter, X, ChevronDown, CheckCircle, RefreshCw } from "lucide-react";
 import { ColumnDef, PaginationState } from "@tanstack/react-table";
 import Link from "next/link";
 import { 
@@ -43,11 +43,11 @@ export type Rfp = {
   file_no: string | null;
   name: string | null;
   status: string | null;
-  status_id: number | null;
   request_date: string | null;
   deadline: string | null;
   quoted_amount: number | null;
   currency: string | null;
+  contacts_id?: number | null;
 };
 
 // Tab type definition
@@ -422,7 +422,8 @@ export function RfpsTable({ initialData = [], fixedTotalEntries }: RfpsTableProp
     setIsModalOpen(false);
     setEditingRfp(null);
     setIsEditMode(false);
-    // No need to manually refresh the data since we're using realtime subscriptions
+    // Force data refresh
+    fetchData();
   };
 
   const handleCloseModal = () => {
@@ -432,6 +433,7 @@ export function RfpsTable({ initialData = [], fixedTotalEntries }: RfpsTableProp
   };
 
   const handleRowDoubleClick = (rfp: Rfp) => {
+    console.log("Opening RFP for editing:", rfp);
     setEditingRfp(rfp);
     setIsEditMode(true);
     setIsModalOpen(true);
@@ -461,6 +463,78 @@ export function RfpsTable({ initialData = [], fixedTotalEntries }: RfpsTableProp
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between mb-4">
+        <div className="relative w-64">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search RFPs..."
+            className="pl-8 w-full h-9 bg-white"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          {searchTerm && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute right-0 top-0 h-9 w-9 px-2.5"
+              onClick={() => setSearchTerm("")}
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">Clear</span>
+            </Button>
+          )}
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 h-9 px-3 border rounded-md bg-white">
+            <span className="text-sm font-medium">Status</span>
+            <ChevronDown className="h-4 w-4 ml-1" />
+            <div className="h-5 border-l border-gray-300 mx-1"></div>
+            <Select
+              value={selectedStatus}
+              onValueChange={setSelectedStatus}
+            >
+              <SelectTrigger className="border-0 p-0 h-auto shadow-none">
+                <SelectValue placeholder="All Statuses" className="text-sm" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                {statusOptions.map((status) => (
+                  <SelectItem key={status.id} value={status.name}>
+                    {status.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedStatus !== "all" && (
+              <X className="h-4 w-4 ml-1 cursor-pointer" onClick={() => handleClearFilter('status')} />
+            )}
+          </div>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9"
+            onClick={() => fetchData()}
+            title="Refresh data"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+          
+          <Button 
+            className="h-9 px-3 bg-blue-600 hover:bg-blue-700 text-white"
+            onClick={() => {
+              setEditingRfp(null);
+              setIsEditMode(false);
+              setIsModalOpen(true);
+            }}
+          >
+            <PlusCircle className="h-4 w-4 mr-2" />
+            Add RFP
+          </Button>
+        </div>
+      </div>
+
       {/* Tab navigation - styled like the example image */}
       <div className="border-b flex items-end">
         <div className="flex">
@@ -489,83 +563,17 @@ export function RfpsTable({ initialData = [], fixedTotalEntries }: RfpsTableProp
         </div>
       </div>
       
-      <div className="flex items-center justify-between mb-2">
-        <div className="relative w-64">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search RFPs..."
-            className="pl-8 w-full h-9 bg-white"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          {searchTerm && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="absolute right-0 top-0 h-9 w-9 px-2.5"
-              onClick={() => setSearchTerm("")}
-            >
-              <X className="h-4 w-4" />
-              <span className="sr-only">Clear</span>
-            </Button>
-          )}
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <Button 
-            className="h-9 px-3 bg-blue-600 hover:bg-blue-700 text-white"
-            onClick={() => {
-              setEditingRfp(null);
-              setIsEditMode(false);
-              setIsModalOpen(true);
-            }}
+      {/* Only show clear filter buttons if needed */}
+      {(selectedStatus !== "all" || searchTerm) && (
+        <div className="flex flex-wrap gap-2 mb-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 text-sm text-blue-600"
+            onClick={() => handleClearFilter('all')}
           >
-            <PlusCircle className="h-4 w-4 mr-2" />
-            Add RFP
+            Clear all filters
           </Button>
-        </div>
-      </div>
-      
-      {/* Only show status filter if not in Pending view */}
-      {activeTab === "All" && (
-        <div className="flex flex-wrap gap-2 mb-4">
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1 h-9 px-3 border rounded-md bg-white">
-              <span className="text-sm font-medium">Status</span>
-              <ChevronDown className="h-4 w-4 ml-1" />
-              <div className="h-5 border-l border-gray-300 mx-1"></div>
-              <Select
-                value={selectedStatus}
-                onValueChange={setSelectedStatus}
-              >
-                <SelectTrigger className="border-0 p-0 h-auto shadow-none">
-                  <SelectValue placeholder="All Statuses" className="text-sm" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  {statusOptions.map((status) => (
-                    <SelectItem key={status.id} value={status.name}>
-                      {status.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {selectedStatus !== "all" && (
-                <X className="h-4 w-4 ml-1 cursor-pointer" onClick={() => handleClearFilter('status')} />
-              )}
-            </div>
-
-            {selectedStatus !== "all" && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-9 text-sm text-blue-600"
-                onClick={() => handleClearFilter('all')}
-              >
-                Clear all
-              </Button>
-            )}
-          </div>
         </div>
       )}
       

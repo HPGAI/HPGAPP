@@ -87,124 +87,114 @@ export function RfpsTable({ initialData = [] }: RfpsTableProps) {
   });
   const [rowCount, setRowCount] = useState(initialData.length);
 
-  // Define columns for the table
+  // Define column width constants to ensure consistency
+  const COLUMN_WIDTHS = {
+    id: 80,
+    proposal_no: 150,
+    name: 250,
+    status: 130,
+    request_date: 150,
+    deadline: 120,
+    quoted_amount: 120,
+    actions: 100
+  };
+
+  // Define columns for the table with fixed sizes
   const columns = useMemo<ColumnDef<Rfp>[]>(
     () => [
       {
         accessorKey: "id",
-        header: ({ column }) => {
-          return (
-            <div className="flex items-center space-x-1">
-              <Button
-                variant="ghost"
-                className="px-2 py-1 h-8"
-                onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-              >
-                ID
-                {column.getIsSorted() === "asc" ? (
-                  <ChevronUp className="ml-1 h-4 w-4" />
-                ) : column.getIsSorted() === "desc" ? (
-                  <ChevronDown className="ml-1 h-4 w-4" />
-                ) : null}
-              </Button>
+        header: ({ column }) => (
+          <div 
+            className="flex items-center justify-between cursor-pointer"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            ID
+            <div className="flex flex-col">
+              {column.getIsSorted() === "asc" ? (
+                <ChevronUp className="h-3 w-3" />
+              ) : column.getIsSorted() === "desc" ? (
+                <ChevronDown className="h-3 w-3" />
+              ) : null}
             </div>
-          );
-        },
+          </div>
+        ),
         cell: ({ row }) => <div className="text-sm">{row.getValue("id")}</div>,
+        size: COLUMN_WIDTHS.id,
+        minSize: COLUMN_WIDTHS.id,
+        maxSize: COLUMN_WIDTHS.id,
+        enableSorting: true,
+        enableResizing: false,
       },
       {
         accessorKey: "proposal_no",
-        header: ({ column }) => {
-          return (
-            <div className="flex flex-col space-y-1">
-              <Button
-                variant="ghost"
-                className="px-2 py-1 h-8"
-                onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-              >
-                Proposal #
-                {column.getIsSorted() === "asc" ? (
-                  <ChevronUp className="ml-1 h-4 w-4" />
-                ) : column.getIsSorted() === "desc" ? (
-                  <ChevronDown className="ml-1 h-4 w-4" />
-                ) : null}
-              </Button>
-              <Input
-                placeholder="Filter..."
-                value={(column.getFilterValue() as string) ?? ""}
-                onChange={(e) => column.setFilterValue(e.target.value)}
-                className="max-w-sm h-8 text-xs"
-              />
+        header: ({ column }) => (
+          <div 
+            className="flex items-center justify-between cursor-pointer" 
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Proposal #
+            <div className="flex flex-col">
+              {column.getIsSorted() === "asc" ? (
+                <ChevronUp className="h-3 w-3" />
+              ) : column.getIsSorted() === "desc" ? (
+                <ChevronDown className="h-3 w-3" />
+              ) : null}
             </div>
-          );
-        },
+          </div>
+        ),
         cell: ({ row }) => <div className="text-sm">{row.getValue("proposal_no") || "-"}</div>,
+        size: COLUMN_WIDTHS.proposal_no,
+        minSize: COLUMN_WIDTHS.proposal_no,
+        maxSize: COLUMN_WIDTHS.proposal_no,
         enableColumnFilter: true,
+        enableResizing: false,
       },
       {
         accessorKey: "name",
-        header: ({ column }) => {
-          return (
-            <div className="flex flex-col space-y-1">
-              <Button
-                variant="ghost"
-                className="px-2 py-1 h-8"
-                onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-              >
-                Name
-                {column.getIsSorted() === "asc" ? (
-                  <ChevronUp className="ml-1 h-4 w-4" />
-                ) : column.getIsSorted() === "desc" ? (
-                  <ChevronDown className="ml-1 h-4 w-4" />
-                ) : null}
-              </Button>
-              <Input
-                placeholder="Filter..."
-                value={(column.getFilterValue() as string) ?? ""}
-                onChange={(e) => column.setFilterValue(e.target.value)}
-                className="max-w-sm h-8 text-xs"
-              />
+        header: ({ column }) => (
+          <div 
+            className="flex items-center justify-between cursor-pointer" 
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Name
+            <div className="flex flex-col">
+              {column.getIsSorted() === "asc" ? (
+                <ChevronUp className="h-3 w-3" />
+              ) : column.getIsSorted() === "desc" ? (
+                <ChevronDown className="h-3 w-3" />
+              ) : null}
             </div>
-          );
-        },
-        cell: ({ row }) => <div className="text-sm font-medium">{row.getValue("name") || "-"}</div>,
+          </div>
+        ),
+        cell: ({ row }) => (
+          <div className="text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap" title={row.getValue("name") || "-"}>
+            {row.getValue("name") || "-"}
+          </div>
+        ),
+        size: COLUMN_WIDTHS.name,
+        minSize: COLUMN_WIDTHS.name,
+        maxSize: COLUMN_WIDTHS.name,
         enableColumnFilter: true,
+        enableResizing: false,
       },
       {
         accessorKey: "status",
-        header: ({ column }) => {
-          return (
-            <div className="flex flex-col space-y-1">
-              <Button
-                variant="ghost"
-                className="px-2 py-1 h-8"
-                onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-              >
-                Status
-                {column.getIsSorted() === "asc" ? (
-                  <ChevronUp className="ml-1 h-4 w-4" />
-                ) : column.getIsSorted() === "desc" ? (
-                  <ChevronDown className="ml-1 h-4 w-4" />
-                ) : null}
-              </Button>
-              <Select
-                value={(column.getFilterValue() as string) ?? ""}
-                onValueChange={(value) => column.setFilterValue(value)}
-              >
-                <SelectTrigger className="h-8 text-xs">
-                  <SelectValue placeholder="All" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All</SelectItem>
-                  <SelectItem value="Pending">Pending</SelectItem>
-                  <SelectItem value="Approved">Approved</SelectItem>
-                  <SelectItem value="Rejected">Rejected</SelectItem>
-                  <SelectItem value="Completed">Completed</SelectItem>
-                </SelectContent>
-              </Select>
+        header: ({ column }) => (
+          <div 
+            className="flex items-center justify-between cursor-pointer" 
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Status
+            <div className="flex flex-col">
+              {column.getIsSorted() === "asc" ? (
+                <ChevronUp className="h-3 w-3" />
+              ) : column.getIsSorted() === "desc" ? (
+                <ChevronDown className="h-3 w-3" />
+              ) : null}
             </div>
-          );
-        },
+          </div>
+        ),
         cell: ({ row }) => (
           <div>
             <Badge 
@@ -224,95 +214,76 @@ export function RfpsTable({ initialData = [] }: RfpsTableProps) {
             </Badge>
           </div>
         ),
+        size: COLUMN_WIDTHS.status,
+        minSize: COLUMN_WIDTHS.status,
+        maxSize: COLUMN_WIDTHS.status,
         enableColumnFilter: true,
+        enableResizing: false,
       },
       {
         accessorKey: "request_date",
-        header: ({ column }) => {
-  return (
-            <div className="flex flex-col space-y-1">
-              <Button
-                variant="ghost"
-                className="px-2 py-1 h-8"
-                onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-              >
-                Request Date
-                {column.getIsSorted() === "asc" ? (
-                  <ChevronUp className="ml-1 h-4 w-4" />
-                ) : column.getIsSorted() === "desc" ? (
-                  <ChevronDown className="ml-1 h-4 w-4" />
-                ) : null}
-              </Button>
-              <Input
-                type="date"
-                placeholder="From..."
-                value={tableFilters.dateFromFilter}
-                onChange={(e) => {
-                  setTableFilters(prev => ({
-                    ...prev,
-                    dateFromFilter: e.target.value
-                  }));
-                  handleDateFilterChange(column, e.target.value, tableFilters.dateToFilter);
-                }}
-                className="max-w-sm h-8 text-xs mb-1"
-              />
-        <Input
-                type="date"
-                placeholder="To..."
-                value={tableFilters.dateToFilter}
-                onChange={(e) => {
-                  setTableFilters(prev => ({
-                    ...prev,
-                    dateToFilter: e.target.value
-                  }));
-                  handleDateFilterChange(column, tableFilters.dateFromFilter, e.target.value);
-                }}
-                className="max-w-sm h-8 text-xs"
-        />
-      </div>
-          );
-        },
+        header: ({ column }) => (
+          <div 
+            className="flex items-center justify-between cursor-pointer" 
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Request Date
+            <div className="flex flex-col">
+              {column.getIsSorted() === "asc" ? (
+                <ChevronUp className="h-3 w-3" />
+              ) : column.getIsSorted() === "desc" ? (
+                <ChevronDown className="h-3 w-3" />
+              ) : null}
+            </div>
+          </div>
+        ),
         cell: ({ row }) => <div className="text-sm">{row.getValue("request_date") || "-"}</div>,
+        size: COLUMN_WIDTHS.request_date,
+        minSize: COLUMN_WIDTHS.request_date,
+        maxSize: COLUMN_WIDTHS.request_date,
         enableColumnFilter: true,
+        enableResizing: false,
       },
       {
         accessorKey: "deadline",
-        header: ({ column }) => {
-          return (
-            <Button
-              variant="ghost"
-              className="px-2 py-1 h-8"
-              onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            >
-              Deadline
+        header: ({ column }) => (
+          <div 
+            className="flex items-center justify-between cursor-pointer" 
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Deadline
+            <div className="flex flex-col">
               {column.getIsSorted() === "asc" ? (
-                <ChevronUp className="ml-1 h-4 w-4" />
+                <ChevronUp className="h-3 w-3" />
               ) : column.getIsSorted() === "desc" ? (
-                <ChevronDown className="ml-1 h-4 w-4" />
+                <ChevronDown className="h-3 w-3" />
               ) : null}
-            </Button>
-          );
-        },
+            </div>
+          </div>
+        ),
         cell: ({ row }) => <div className="text-sm">{row.getValue("deadline") || "-"}</div>,
+        size: COLUMN_WIDTHS.deadline,
+        minSize: COLUMN_WIDTHS.deadline,
+        maxSize: COLUMN_WIDTHS.deadline,
+        enableResizing: false,
       },
       {
         accessorKey: "quoted_amount",
-        header: ({ column }) => {
-          return (
-            <Button
-              variant="ghost"
-              className="px-2 py-1 h-8 justify-end w-full"
-              onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            >
-              Amount
+        header: ({ column }) => (
+          <div 
+            className="flex items-center justify-between text-right cursor-pointer" 
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            <span className="w-full text-right">Amount</span>
+            <div className="flex flex-col">
               {column.getIsSorted() === "asc" ? (
-                <ChevronUp className="ml-1 h-4 w-4" />
+                <ChevronUp className="h-3 w-3" />
               ) : column.getIsSorted() === "desc" ? (
-                <ChevronDown className="ml-1 h-4 w-4" />
+                <ChevronDown className="h-3 w-3" />
               ) : null}
-            </Button>
-          );
-        },
+            </div>
+          </div>
+        ),
         cell: ({ row }) => {
           const amount = row.getValue("quoted_amount") as number | null;
           const currency = row.original.currency || "USD";
@@ -327,9 +298,14 @@ export function RfpsTable({ initialData = [] }: RfpsTableProps) {
             </div>
           );
         },
+        size: COLUMN_WIDTHS.quoted_amount,
+        minSize: COLUMN_WIDTHS.quoted_amount,
+        maxSize: COLUMN_WIDTHS.quoted_amount,
+        enableResizing: false,
       },
       {
         id: "actions",
+        header: () => <div className="text-right">Actions</div>,
         cell: ({ row }) => (
           <div className="text-right">
             <Button
@@ -342,23 +318,16 @@ export function RfpsTable({ initialData = [] }: RfpsTableProps) {
             </Button>
           </div>
         ),
+        size: COLUMN_WIDTHS.actions,
+        minSize: COLUMN_WIDTHS.actions,
+        maxSize: COLUMN_WIDTHS.actions,
+        enableResizing: false,
       }
     ],
-    [tableFilters, router]
+    [router]
   );
 
-  // Handle date filter changes
-  const handleDateFilterChange = (column: any, fromDate: string, toDate: string) => {
-    // Build a filter object for the date range
-    const dateFilter = { from: fromDate, to: toDate };
-    if (!fromDate && !toDate) {
-      column.setFilterValue(undefined);
-    } else {
-      column.setFilterValue(dateFilter);
-    }
-  };
-
-  // Initialize Tanstack Table
+  // Initialize Tanstack Table with improved configuration
   const table = useReactTable({
     data,
     columns,
@@ -369,6 +338,13 @@ export function RfpsTable({ initialData = [] }: RfpsTableProps) {
     onPaginationChange: setPagination,
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
+    defaultColumn: {
+      // Default values for all columns
+      minSize: 80,
+      maxSize: 400,
+      size: 120,
+      enableResizing: false,
+    },
     state: {
       sorting,
       columnFilters,
@@ -376,6 +352,9 @@ export function RfpsTable({ initialData = [] }: RfpsTableProps) {
       columnVisibility,
       rowSelection,
     },
+    // Force a fixed layout to prevent resizing
+    columnResizeMode: "onChange",
+    enableColumnResizing: false,
     manualPagination: true,
     manualSorting: true,
     manualFiltering: true,
@@ -560,6 +539,112 @@ export function RfpsTable({ initialData = [] }: RfpsTableProps) {
     }
   }, [searchParams, getInitialFilters]);
 
+  // Effect for column visibility changes
+  useEffect(() => {
+    // Force the table to use fixed column widths regardless of content
+    const forceFixedWidths = () => {
+      const tableElement = document.querySelector('.rfp-table') as HTMLTableElement;
+      if (tableElement) {
+        // Apply fixed table layout immediately
+        tableElement.style.tableLayout = 'fixed';
+        tableElement.style.width = '100%';
+        
+        // Force each cell to respect its width
+        const allCells = tableElement.querySelectorAll('th, td');
+        allCells.forEach((cell, index) => {
+          const colIndex = index % 8; // 8 columns total
+          let width = '100px';
+          
+          switch(colIndex) {
+            case 0: width = '80px'; break;
+            case 1: width = '150px'; break;
+            case 2: width = '250px'; break;
+            case 3: width = '130px'; break;
+            case 4: width = '150px'; break;
+            case 5: width = '120px'; break;
+            case 6: width = '120px'; break;
+            case 7: width = '100px'; break;
+          }
+          
+          (cell as HTMLElement).style.width = width;
+          (cell as HTMLElement).style.minWidth = width;
+          (cell as HTMLElement).style.maxWidth = width;
+        });
+      }
+    };
+
+    // Apply immediately and after a small delay to catch any DOM updates
+    forceFixedWidths();
+    const timer = setTimeout(forceFixedWidths, 100);
+    
+    return () => clearTimeout(timer);
+  }, [columnVisibility, data, sorting, pagination]);
+
+  // Effect to ensure fixed widths on initial render
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const tableElement = document.querySelector('.rfp-table') as HTMLTableElement;
+      if (tableElement) {
+        tableElement.style.tableLayout = 'fixed';
+      }
+    }, 0);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Effect to enforce fixed widths after data changes, pagination, or tab changes
+  useEffect(() => {
+    const applyFixedWidths = () => {
+      const tableElement = document.querySelector('.rfps-table table') as HTMLTableElement;
+      if (tableElement) {
+        // Set table layout to fixed
+        tableElement.style.tableLayout = 'fixed';
+        
+        // Calculate total width
+        const totalWidth = Object.values(COLUMN_WIDTHS).reduce((sum, width) => sum + width, 0);
+        tableElement.style.width = `${totalWidth}px`;
+        
+        // Apply fixed widths to header cells
+        const headerCells = tableElement.querySelectorAll('thead th');
+        const columnKeys = Object.keys(COLUMN_WIDTHS) as Array<keyof typeof COLUMN_WIDTHS>;
+        headerCells.forEach((cell, index) => {
+          if (index < columnKeys.length) {
+            const htmlCell = cell as HTMLElement;
+            htmlCell.style.width = `${COLUMN_WIDTHS[columnKeys[index]]}px`;
+          }
+        });
+        
+        // Apply fixed widths to body cells
+        const bodyRows = tableElement.querySelectorAll('tbody tr');
+        bodyRows.forEach(row => {
+          const cells = row.querySelectorAll('td');
+          cells.forEach((cell, index) => {
+            if (index < columnKeys.length) {
+              const htmlCell = cell as HTMLElement;
+              htmlCell.style.width = `${COLUMN_WIDTHS[columnKeys[index]]}px`;
+            }
+          });
+        });
+        
+        // Set minimum width on table wrapper
+        const wrapper = document.querySelector('.rfps-table') as HTMLElement;
+        if (wrapper) {
+          wrapper.style.minWidth = `${totalWidth}px`;
+        }
+      }
+    };
+
+    // Apply immediately
+    applyFixedWidths();
+    
+    // Apply again after a short delay to handle DOM updates
+    const timeoutId = setTimeout(applyFixedWidths, 200);
+    
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [table, data, pagination, sorting, COLUMN_WIDTHS]);
+
   return (
     <div className="space-y-4">
       <Card>
@@ -636,107 +721,255 @@ export function RfpsTable({ initialData = [] }: RfpsTableProps) {
             onFilterChange={handleFilterChange}
           />
           
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id} className="bg-muted/40 hover:bg-muted">
-                    {headerGroup.headers.map((header) => (
-                      <TableHead key={header.id} className="py-2">
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={columns.length} className="h-24 text-center">
-                      <div className="flex justify-center items-center space-x-2">
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
-                        <p className="text-sm text-muted-foreground">Loading...</p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : table.getRowModel().rows?.length ? (
-                  table.getRowModel().rows.map((row) => (
-                    <TableRow
-                      key={row.id}
-                      data-state={row.getIsSelected() && "selected"}
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id} className="py-3">
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </TableCell>
-                      ))}
+          <div className="overflow-auto rfp-table-container" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', position: 'relative' }}>
+            <div className="rounded-md border min-w-full rfp-table-container" style={{ width: '100%' }}>
+              <style jsx global>{`
+                /* Fix for RFPs table to ensure consistent column widths */
+                .rfps-table-fixed {
+                  table-layout: fixed !important;
+                  width: 100% !important;
+                  border-collapse: separate !important;
+                  border-spacing: 0 !important;
+                }
+                
+                /* Apply consistent widths to all th/td elements */
+                .rfps-table-fixed th,
+                .rfps-table-fixed td {
+                  box-sizing: border-box !important;
+                  overflow: hidden !important;
+                  text-overflow: ellipsis !important;
+                  white-space: nowrap !important;
+                }
+                
+                /* Fixed width for column 1 - ID */
+                .rfps-table-fixed th:nth-of-type(1),
+                .rfps-table-fixed td:nth-of-type(1) {
+                  width: ${COLUMN_WIDTHS.id}px !important;
+                  min-width: ${COLUMN_WIDTHS.id}px !important;
+                  max-width: ${COLUMN_WIDTHS.id}px !important;
+                }
+                
+                /* Fixed width for column 2 - Proposal # */
+                .rfps-table-fixed th:nth-of-type(2),
+                .rfps-table-fixed td:nth-of-type(2) {
+                  width: ${COLUMN_WIDTHS.proposal_no}px !important;
+                  min-width: ${COLUMN_WIDTHS.proposal_no}px !important;
+                  max-width: ${COLUMN_WIDTHS.proposal_no}px !important;
+                }
+                
+                /* Fixed width for column 3 - Name */
+                .rfps-table-fixed th:nth-of-type(3),
+                .rfps-table-fixed td:nth-of-type(3) {
+                  width: ${COLUMN_WIDTHS.name}px !important;
+                  min-width: ${COLUMN_WIDTHS.name}px !important;
+                  max-width: ${COLUMN_WIDTHS.name}px !important;
+                }
+                
+                /* Fixed width for column 4 - Status */
+                .rfps-table-fixed th:nth-of-type(4),
+                .rfps-table-fixed td:nth-of-type(4) {
+                  width: ${COLUMN_WIDTHS.status}px !important;
+                  min-width: ${COLUMN_WIDTHS.status}px !important;
+                  max-width: ${COLUMN_WIDTHS.status}px !important;
+                }
+                
+                /* Fixed width for column 5 - Request Date */
+                .rfps-table-fixed th:nth-of-type(5),
+                .rfps-table-fixed td:nth-of-type(5) {
+                  width: ${COLUMN_WIDTHS.request_date}px !important;
+                  min-width: ${COLUMN_WIDTHS.request_date}px !important;
+                  max-width: ${COLUMN_WIDTHS.request_date}px !important;
+                }
+                
+                /* Fixed width for column 6 - Deadline */
+                .rfps-table-fixed th:nth-of-type(6),
+                .rfps-table-fixed td:nth-of-type(6) {
+                  width: ${COLUMN_WIDTHS.deadline}px !important;
+                  min-width: ${COLUMN_WIDTHS.deadline}px !important;
+                  max-width: ${COLUMN_WIDTHS.deadline}px !important;
+                }
+                
+                /* Fixed width for column 7 - Amount */
+                .rfps-table-fixed th:nth-of-type(7),
+                .rfps-table-fixed td:nth-of-type(7) {
+                  width: ${COLUMN_WIDTHS.quoted_amount}px !important;
+                  min-width: ${COLUMN_WIDTHS.quoted_amount}px !important;
+                  max-width: ${COLUMN_WIDTHS.quoted_amount}px !important;
+                }
+                
+                /* Fixed width for column 8 - Actions */
+                .rfps-table-fixed th:nth-of-type(8),
+                .rfps-table-fixed td:nth-of-type(8) {
+                  width: ${COLUMN_WIDTHS.actions}px !important;
+                  min-width: ${COLUMN_WIDTHS.actions}px !important;
+                  max-width: ${COLUMN_WIDTHS.actions}px !important;
+                }
+                
+                /* Force rows to maintain consistent heights */
+                .rfps-table-fixed tr {
+                  height: 48px !important;
+                }
+                
+                .rfps-table-fixed thead tr {
+                  height: 56px !important;
+                }
+                
+                /* Force the specific width of the table */
+                .rfps-table-fixed.table-width-enforced {
+                  width: ${Object.values(COLUMN_WIDTHS).reduce((sum, width) => sum + width, 0)}px !important;
+                }
+              `}</style>
+              <Table 
+                className="rfps-table-fixed table-width-enforced"
+              >
+                <TableHeader>
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <TableRow key={headerGroup.id} className="bg-muted/40 hover:bg-muted">
+                      {headerGroup.headers.map((header, index) => {
+                        // Map column indices to our width constants
+                        let width = 100;
+                        if (index === 0) width = COLUMN_WIDTHS.id;
+                        else if (index === 1) width = COLUMN_WIDTHS.proposal_no;
+                        else if (index === 2) width = COLUMN_WIDTHS.name;
+                        else if (index === 3) width = COLUMN_WIDTHS.status;
+                        else if (index === 4) width = COLUMN_WIDTHS.request_date;
+                        else if (index === 5) width = COLUMN_WIDTHS.deadline;
+                        else if (index === 6) width = COLUMN_WIDTHS.quoted_amount;
+                        else if (index === 7) width = COLUMN_WIDTHS.actions;
+                        
+                        return (
+                          <TableHead 
+                            key={header.id} 
+                            className="py-2"
+                            style={{
+                              width: `${width}px`,
+                              minWidth: `${width}px`,
+                              maxWidth: `${width}px`,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
+                            {header.isPlaceholder
+                              ? null
+                              : flexRender(
+                                  header.column.columnDef.header,
+                                  header.getContext()
+                                )}
+                          </TableHead>
+                        );
+                      })}
                     </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={columns.length} className="h-24 text-center">
-                      No results found.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-            
-            {/* Pagination Controls */}
-            <div className="flex items-center justify-between px-4 py-3 border-t">
-        <div className="text-sm text-muted-foreground">
-                Showing {table.getRowModel().rows.length > 0 
-                  ? pagination.pageIndex * pagination.pageSize + 1 
-                  : 0} to {Math.min(
-                  (pagination.pageIndex + 1) * pagination.pageSize,
-                  rowCount
-                )} of {rowCount} entries
+                  ))}
+                </TableHeader>
+                <TableBody>
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={columns.length} className="h-24 text-center">
+                        <div className="flex justify-center items-center space-x-2">
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                          <p className="text-sm text-muted-foreground">Loading...</p>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : table.getRowModel().rows?.length ? (
+                    table.getRowModel().rows.map((row) => (
+                      <TableRow
+                        key={row.id}
+                        data-state={row.getIsSelected() && "selected"}
+                      >
+                        {row.getVisibleCells().map((cell, index) => {
+                          // Map column indices to our width constants
+                          let width = 100;
+                          if (index === 0) width = COLUMN_WIDTHS.id;
+                          else if (index === 1) width = COLUMN_WIDTHS.proposal_no;
+                          else if (index === 2) width = COLUMN_WIDTHS.name;
+                          else if (index === 3) width = COLUMN_WIDTHS.status;
+                          else if (index === 4) width = COLUMN_WIDTHS.request_date;
+                          else if (index === 5) width = COLUMN_WIDTHS.deadline;
+                          else if (index === 6) width = COLUMN_WIDTHS.quoted_amount;
+                          else if (index === 7) width = COLUMN_WIDTHS.actions;
+                          
+                          return (
+                            <TableCell 
+                              key={cell.id} 
+                              className="py-3"
+                              style={{
+                                width: `${width}px`,
+                                minWidth: `${width}px`,
+                                maxWidth: `${width}px`,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
+                              }}
+                            >
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </TableCell>
+                          );
+                        })}
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={columns.length} className="h-24 text-center">
+                        No results found.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+              
+              {/* Pagination Controls */}
+              <div className="flex items-center justify-between px-4 py-3 border-t">
+                <div className="text-sm text-muted-foreground">
+                  Showing {table.getRowModel().rows.length > 0 
+                    ? pagination.pageIndex * pagination.pageSize + 1 
+                    : 0} to {Math.min(
+                    (pagination.pageIndex + 1) * pagination.pageSize,
+                    rowCount
+                  )} of {rowCount} entries
+                </div>
+                <div className="flex gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => table.setPageIndex(0)}
+                    disabled={!table.getCanPreviousPage() || loading}
+                  >
+                    First
+                  </Button>
+                  <Button
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => table.previousPage()}
+                    disabled={!table.getCanPreviousPage() || loading}
+                  >
+                    Previous
+                  </Button>
+                  <span className="flex items-center gap-1 mx-2">
+                    <div className="text-sm font-medium">
+                      Page {pagination.pageIndex + 1} of {table.getPageCount()}
+                    </div>
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => table.nextPage()}
+                    disabled={!table.getCanNextPage() || loading}
+                  >
+                    Next
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                    disabled={!table.getCanNextPage() || loading}
+                  >
+                    Last
+                  </Button>
+                </div>
               </div>
-              <div className="flex gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => table.setPageIndex(0)}
-                  disabled={!table.getCanPreviousPage() || loading}
-                >
-                  First
-                </Button>
-                <Button
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => table.previousPage()}
-                  disabled={!table.getCanPreviousPage() || loading}
-                >
-                  Previous
-                </Button>
-                <span className="flex items-center gap-1 mx-2">
-                  <div className="text-sm font-medium">
-                    Page {pagination.pageIndex + 1} of {table.getPageCount()}
-        </div>
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => table.nextPage()}
-                  disabled={!table.getCanNextPage() || loading}
-                >
-                  Next
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                  disabled={!table.getCanNextPage() || loading}
-                >
-                  Last
-          </Button>
-        </div>
-      </div>
+            </div>
           </div>
         </CardContent>
       </Card>

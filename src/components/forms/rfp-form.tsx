@@ -27,7 +27,7 @@ import { Separator } from "../../components/ui/separator";
 import { toast } from "../../components/ui/use-toast";
 import { ContactSelector } from "./contact-selector";
 import { fetchCurrencies, type Currency, calculateExchangeRate } from "../../lib/currency";
-import { branchOptions, fetchRfpStatuses, type RfpStatus, getStatusIdByName, getStatusNameById } from "../../lib/rfp-options";
+import { branchOptions, fetchRfpStatuses, type RfpStatus } from "../../lib/rfp-options";
 
 // Define the form schema using Zod
 const rfpFormSchema = z.object({
@@ -35,7 +35,6 @@ const rfpFormSchema = z.object({
   proposal_no: z.string().min(1, "Proposal number is required"),
   file_no: z.string().optional().nullable(),
   name: z.string().min(1, "Name is required"),
-  status_id: z.coerce.number().optional().nullable(),
   status: z.string().min(1, "Status is required"),
   request_date: z.string().min(1, "Request date is required"),
   deadline: z.string().optional().nullable(),
@@ -56,7 +55,6 @@ interface RfpFormProps {
     file_no?: string | null;
     name?: string | null;
     status?: string | null;
-    status_id?: number | null;
     request_date?: string | null;
     deadline?: string | null;
     quoted_amount?: number | null;
@@ -85,7 +83,6 @@ export function RfpForm({ onSuccess, onCancel, defaultValues, isEditMode = false
       file_no: defaultValues?.file_no || "",
       name: defaultValues?.name || "",
       status: defaultValues?.status || "Pending",
-      status_id: defaultValues?.status_id || null,
       request_date: defaultValues?.request_date || new Date().toISOString().split("T")[0],
       deadline: defaultValues?.deadline || "",
       quoted_amount: defaultValues?.quoted_amount || null,
@@ -129,36 +126,6 @@ export function RfpForm({ onSuccess, onCancel, defaultValues, isEditMode = false
       try {
         const statusData = await fetchRfpStatuses();
         setStatuses(statusData);
-        
-        // If we have a status name but no status_id, try to get the ID
-        const statusName = form.getValues("status");
-        const statusId = form.getValues("status_id");
-        
-        if (statusName && !statusId) {
-          // Find the status ID from the fetched data first (faster)
-          const matchedStatus = statusData.find(s => s.name === statusName);
-          if (matchedStatus) {
-            form.setValue("status_id", matchedStatus.id);
-          } else {
-            // If not found in the fetched data, try to get from the database
-            const id = await getStatusIdByName(statusName);
-            if (id) {
-              form.setValue("status_id", id);
-            }
-          }
-        } else if (statusId && !statusName) {
-          // Find the status name from the fetched data first (faster)
-          const matchedStatus = statusData.find(s => s.id === statusId);
-          if (matchedStatus) {
-            form.setValue("status", matchedStatus.name);
-          } else {
-            // If not found in the fetched data, try to get from the database
-            const name = await getStatusNameById(statusId);
-            if (name) {
-              form.setValue("status", name);
-            }
-          }
-        }
       } catch (error) {
         console.error('Error fetching RFP statuses:', error);
         // Fallback to hardcoded statuses if fetching fails
@@ -207,7 +174,6 @@ export function RfpForm({ onSuccess, onCancel, defaultValues, isEditMode = false
         file_no: defaultValues.file_no || "",
         name: defaultValues.name || "",
         status: defaultValues.status || "Pending",
-        status_id: defaultValues.status_id || null,
         request_date: defaultValues.request_date || new Date().toISOString().split("T")[0],
         deadline: defaultValues.deadline || "",
         quoted_amount: defaultValues.quoted_amount || null,
@@ -235,8 +201,6 @@ export function RfpForm({ onSuccess, onCancel, defaultValues, isEditMode = false
       // Clean up empty values before submitting
       const cleanedValues = {
         ...values,
-        // Remove status_id as it doesn't exist in the table yet
-        status_id: undefined,
         // Ensure request_date is properly set
         request_date: values.request_date && values.request_date.trim() !== "" ? values.request_date : null,
         // Ensure deadline is properly set to null if empty
@@ -246,13 +210,19 @@ export function RfpForm({ onSuccess, onCancel, defaultValues, isEditMode = false
       };
       
       if (isEditMode && defaultValues?.id) {
+        // Log update attempt for debugging
+        console.log("Updating RFP with ID:", defaultValues.id, "Values:", cleanedValues);
+        
         // Update existing RFP
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from("rfps")
           .update(cleanedValues)
-          .eq("id", defaultValues.id);
+          .eq("id", defaultValues.id)
+          .select();
         
         if (error) throw error;
+        
+        console.log("Update response:", data);
         
         toast({
           title: "RFP updated successfully",
@@ -321,20 +291,13 @@ export function RfpForm({ onSuccess, onCancel, defaultValues, isEditMode = false
   const StatusField = () => (
     <FormField
       control={form.control}
-      name="status_id"
+      name="status"
       render={({ field }) => (
         <FormItem>
           <FormLabel>Status *</FormLabel>
           <Select
-            onValueChange={(value) => {
-              field.onChange(parseInt(value));
-              // Also set the status name for backward compatibility
-              const status = statuses.find(s => s.id === parseInt(value));
-              if (status) {
-                form.setValue("status", status.name);
-              }
-            }}
-            value={field.value?.toString() || ""}
+            onValueChange={field.onChange}
+            value={field.value || "Pending"}
             disabled={isLoadingStatuses}
           >
             <FormControl>
@@ -344,7 +307,7 @@ export function RfpForm({ onSuccess, onCancel, defaultValues, isEditMode = false
             </FormControl>
             <SelectContent>
               {statuses.map((status) => (
-                <SelectItem key={status.id} value={status.id.toString()}>
+                <SelectItem key={status.id} value={status.name}>
                   {status.name}
                 </SelectItem>
               ))}
